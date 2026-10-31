@@ -212,7 +212,7 @@ def get_feargreed():
 
 @app.route("/api/market-indicators", methods=["GET"])
 def get_market_indicators():
-    """VIX 指數與 Nasdaq 100 Forward P/E Ratio（MacroMicro + DollarLiquidity）。"""
+    """VIX 指數與 Nasdaq 100 Forward P/E Ratio（DollarLiquidity）。"""
     return jsonify(portfolio_data.get_market_indicators())
 
 

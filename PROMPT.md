@@ -40,3 +40,22 @@ https://dollarliquidity.com/en/valuation/nasdaq-100-forward-pe
 ```text
 將所有需要用到的檔案git add並git commit 最後git push
 ```
+
+## 2026-10-31 16:41:19+08:00
+```text
+這五種區間方塊顯示說明可以刪除
+75~100           極度貪婪 (Extreme Greed)
+55~<75    貪婪 (Greed)
+45~<55    中性 (Neutral)
+25~<45    恐懼 (Fear)
+0~<25           極度恐懼 (Extreme Fear)
+
+MacroMicro 財經M平方的Nasdaq 100 Forward P/E Ratio數據與"雙站統計比對"也先刪除
+
+先不要git add和commit
+```
+
+## 2026-10-31 16:48:27+08:00
+```text
+將所有需要用到的檔案git add並git commit 最後git push
+```

@@ -20,7 +20,6 @@ const ALLOWED_HOSTS = new Set([
   "mis.twse.com.tw",
   "query1.finance.yahoo.com",
   "query2.finance.yahoo.com",
-  "www.macromicro.me",
   "dollarliquidity.com",
 ]);
 
@@ -61,29 +60,6 @@ export default {
     };
     if (targetUrl.hostname === "mis.twse.com.tw") {
       upstreamHeaders["Referer"] = "https://mis.twse.com.tw/stock/index.jsp";
-    } else if (
-      targetUrl.hostname === "www.macromicro.me" &&
-      targetUrl.pathname.startsWith("/charts/data/")
-    ) {
-      // MacroMicro 圖表數據需要先取得頁面 Cookie 與 data-stk Bearer token
-      const chartId = targetUrl.pathname.split("/").pop();
-      const pageUrl = `https://www.macromicro.me/charts/${chartId}/NASDAQ-100-Index-Forward-PE-Ratio`;
-      const pageResp = await fetch(pageUrl, { headers: upstreamHeaders });
-      const pageHtml = await pageResp.text();
-      const stkMatch = pageHtml.match(/data-stk="([a-f0-9]+)"/);
-      const setCookie = pageResp.headers.get("set-cookie");
-      if (stkMatch) {
-        upstreamHeaders["Authorization"] = `Bearer ${stkMatch[1]}`;
-      }
-      if (setCookie) {
-        const cookies = setCookie
-          .split(/,(?=\s*[A-Za-z0-9_-]+=)/)
-          .map(c => c.split(";")[0].trim())
-          .join("; ");
-        upstreamHeaders["Cookie"] = cookies;
-      }
-      upstreamHeaders["Referer"] = pageUrl;
-      upstreamHeaders["Accept"] = "application/json";
     }
     const upstream = await fetch(targetUrl.toString(), { headers: upstreamHeaders });
 

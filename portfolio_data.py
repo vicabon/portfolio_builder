@@ -456,8 +456,6 @@ def gauge_color(score):
 
 # ------------------------------------------------------------ 市場指標 (VIX & Nasdaq100 Forward PE)
 
-_MACROMICRO_URL = "https://www.macromicro.me/charts/148300/NASDAQ-100-Index-Forward-PE-Ratio"
-_MACROMICRO_DATA_URL = "https://www.macromicro.me/charts/data/148300"
 _DOLLARLIQUIDITY_URL = "https://dollarliquidity.com/en/valuation/nasdaq-100-forward-pe"
 
 
@@ -479,102 +477,6 @@ def get_vix():
         "value": round(price, 2) if price is not None else None,
         "previousValue": round(prev, 2) if prev is not None else None,
         "date": date_str,
-    }
-
-
-def _fmt_ym(date_str):
-    """把 MacroMicro 月頻日期 '2026-10-01' 格式化為 '2026-10'。"""
-    if not date_str:
-        return None
-    s = str(date_str).strip()
-    if re.match(r"^\d{4}-\d{2}-01$", s):
-        return s[:7]
-    return s
-
-
-def get_nasdaq100_forward_pe_macromicro():
-    """從財經M平方 (MacroMicro) 取得 NASDAQ 100 Index - Forward PE Ratio 最新數據與前值。
-
-    流程：
-    1. 先透過 Session 取得圖表頁 HTML 與頁面內嵌的 `data-stk` token。
-    2. 帶上 Session Cookie 與 `Authorization: Bearer <stk>` 呼叫 `/charts/data/148300`，
-       取得完整時間序列 `data['c:148300']['series'][0]`（即 NASDAQ 100 Index - Forward PE Ratio），
-       解析最新一期（如 2026-10: 19.96）與前值（如 2026-09: 21.55）。
-    3. 若 API 被阻擋，退回解析 HTML 內嵌的 `series_last_rows`。
-    """
-    import json
-
-    try:
-        sess = requests.Session()
-        resp_page = sess.get(_MACROMICRO_URL, headers=_HEADERS, timeout=10)
-        resp_page.raise_for_status()
-        stk_match = re.search(r'data-stk="([a-f0-9]+)"', resp_page.text)
-        if stk_match:
-            stk = stk_match.group(1)
-            resp_data = sess.get(
-                _MACROMICRO_DATA_URL,
-                headers={
-                    **_HEADERS,
-                    "Authorization": f"Bearer {stk}",
-                    "Referer": _MACROMICRO_URL,
-                    "Accept": "application/json",
-                },
-                timeout=10,
-            )
-            if resp_data.status_code == 200:
-                payload = resp_data.json()
-                c_obj = (payload.get("data") or {}).get("c:148300") or {}
-                series = c_obj.get("series") or []
-                if series and series[0]:
-                    pts = [row for row in series[0] if len(row) >= 2 and _to_float(row[1]) is not None]
-                    if pts:
-                        latest_row = pts[-1]
-                        prev_row = pts[-2] if len(pts) >= 2 else None
-                        val = round(float(latest_row[1]), 2)
-                        prev_val = round(float(prev_row[1]), 2) if prev_row else None
-                        return {
-                            "value": val,
-                            "date": _fmt_ym(latest_row[0]),
-                            "rawDate": str(latest_row[0]),
-                            "previousValue": prev_val,
-                            "previousDate": _fmt_ym(prev_row[0]) if prev_row else None,
-                            "change": round(val - prev_val, 2) if prev_val is not None else None,
-                            "url": _MACROMICRO_URL,
-                            "source": "MacroMicro 財經M平方",
-                        }
-
-        # 備援：HTML 內嵌的 series_last_rows
-        match = re.search(r'"series_last_rows":(".*?"),"', resp_page.text)
-        if match:
-            raw_str = json.loads(match.group(1))
-            series_list = json.loads(raw_str)
-            if series_list and series_list[0]:
-                pts = [row for row in series_list[0] if len(row) >= 2 and _to_float(row[1]) is not None]
-                if pts:
-                    latest_row = pts[-1]
-                    prev_row = pts[-2] if len(pts) >= 2 else None
-                    val = round(float(latest_row[1]), 2)
-                    prev_val = round(float(prev_row[1]), 2) if prev_row else None
-                    return {
-                        "value": val,
-                        "date": _fmt_ym(latest_row[0]),
-                        "rawDate": str(latest_row[0]),
-                        "previousValue": prev_val,
-                        "previousDate": _fmt_ym(prev_row[0]) if prev_row else None,
-                        "change": round(val - prev_val, 2) if prev_val is not None else None,
-                        "url": _MACROMICRO_URL,
-                        "source": "MacroMicro 財經M平方",
-                    }
-    except Exception as error:
-        print(f"[pe] MacroMicro Nasdaq100 Forward PE 取得失敗：{error}")
-    return {
-        "value": None,
-        "date": None,
-        "previousValue": None,
-        "previousDate": None,
-        "change": None,
-        "url": _MACROMICRO_URL,
-        "source": "MacroMicro 財經M平方",
     }
 
 
@@ -648,17 +550,10 @@ def get_nasdaq100_forward_pe_dollarliquidity():
 
 
 def get_market_indicators():
-    """整合 VIX 與兩個來源的 Nasdaq 100 Forward P/E Ratio（含雙方最新值、前值與差異比對）。"""
-    mm = get_nasdaq100_forward_pe_macromicro()
-    dl = get_nasdaq100_forward_pe_dollarliquidity()
-    diff = None
-    if mm.get("value") is not None and dl.get("value") is not None:
-        diff = round(mm["value"] - dl["value"], 2)
+    """整合 VIX 與 DollarLiquidity 的 Nasdaq 100 Forward P/E Ratio。"""
     return {
         "vix": get_vix(),
         "nasdaq100ForwardPe": {
-            "macromicro": mm,
-            "dollarliquidity": dl,
-            "spread": diff,
+            "dollarliquidity": get_nasdaq100_forward_pe_dollarliquidity(),
         },
     }

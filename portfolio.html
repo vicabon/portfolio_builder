@@ -75,16 +75,8 @@
         .metric-title { font-size: 11px; color: var(--muted); }
         .metric-value { font-size: 20px; font-weight: bold; color: var(--ink); margin-top: 5px; }
         .metric-sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
-        .pe-dual-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; text-align: left; }
-        .pe-dual-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; }
-        .pe-dual-left { display: flex; flex-direction: column; gap: 2px; }
-        .pe-dual-src { font-size: 12px; color: var(--accent); text-decoration: none; font-weight: 700; white-space: nowrap; }
-        .pe-dual-src:hover { text-decoration: underline; }
-        .pe-dual-meta { font-size: 11px; color: var(--muted); white-space: nowrap; }
-        .pe-dual-right { text-align: right; white-space: nowrap; }
-        .pe-dual-val { font-size: 17px; font-weight: 800; color: var(--ink); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-        .pe-dual-prev { font-size: 11px; color: var(--muted); margin-top: 2px; }
-        .pe-compare-bar { margin-top: 6px; padding: 5px 10px; border-radius: 6px; background: #eef2f8; font-size: 11px; color: var(--ink); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; }
+        .pe-src-link { font-size: 11px; color: var(--accent); text-decoration: none; font-weight: 600; }
+        .pe-src-link:hover { text-decoration: underline; }
         /* CNN Fear & Greed 半圓儀表板樣式（參考 edition.cnn.com/markets/fear-and-greed） */
         .gauge-wrapper { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 16px; }
         .gauge-header { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
@@ -104,12 +96,6 @@
         .cnn-history-row .h-right { display: flex; align-items: center; gap: 8px; }
         .cnn-history-row .h-rating { font-size: 12px; font-weight: 700; }
         .cnn-history-row .h-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 38px; height: 24px; padding: 0 8px; border-radius: 999px; font-size: 12px; font-weight: 800; color: #fff; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-        .gauge-zones { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 12px; }
-        .gauge-zone { border: 1px solid var(--line); border-top: 4px solid #ccc; border-radius: 8px; padding: 8px 6px; text-align: center; background: #f8fafc; transition: all 0.2s ease; }
-        .gauge-zone.active { background: #fff; box-shadow: 0 2px 8px rgba(16,24,40,0.12); transform: translateY(-2px); border-color: var(--ink); }
-        .gauge-zone .z-range { font-size: 12px; font-weight: 800; color: var(--ink); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-        .gauge-zone .z-zh { font-size: 13px; font-weight: 700; margin-top: 2px; }
-        .gauge-zone .z-en { font-size: 10px; color: var(--muted); margin-top: 1px; }
         .price-box { background: #f1f5f9; padding: 12px 20px; border-radius: 6px; font-size: 20px; font-weight: bold; margin: 4px 0 15px; display: flex; justify-content: space-between; }
         .grid-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; padding: 0; margin: 0; list-style: none; }
         .grid-list li { padding: 12px; background: #f8fafc; border-radius: 6px; border-left: 4px solid #ccc; display: flex; flex-direction: column; gap: 4px; }
@@ -130,8 +116,6 @@
             .metric { min-width: 0; padding: 10px 8px; }
             .metric-value { font-size: 16px; }
             .cnn-fg-layout { grid-template-columns: 1fr; padding: 12px; gap: 12px; }
-            .gauge-zones { grid-template-columns: 1fr; gap: 6px; }
-            .gauge-zone { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; border-top-width: 1px; border-left: 5px solid #ccc; text-align: left; }
             .price-box { font-size: 17px; }
         }
     </style>
@@ -248,34 +232,10 @@
                     <div id="lohas-vix-value" class="metric-value">—</div>
                     <div id="lohas-vix-date" class="metric-sub"></div>
                 </div>
-                <div class="metric" style="flex: 1.7; min-width: 270px;">
-                    <div class="metric-title">Nasdaq 100 Forward P/E Ratio（雙來源比對）</div>
-                    <div class="pe-dual-list">
-                        <div class="pe-dual-row">
-                            <div class="pe-dual-left">
-                                <a class="pe-dual-src" href="https://www.macromicro.me/charts/148300/NASDAQ-100-Index-Forward-PE-Ratio" target="_blank" rel="noopener noreferrer">MacroMicro 財經M平方 ↗</a>
-                                <div class="pe-dual-meta" id="lohas-pe-mm-date">資料期別：—</div>
-                            </div>
-                            <div class="pe-dual-right">
-                                <div class="pe-dual-val" id="lohas-pe-mm-val">—</div>
-                                <div class="pe-dual-prev" id="lohas-pe-mm-prev">前值：—</div>
-                            </div>
-                        </div>
-                        <div class="pe-dual-row">
-                            <div class="pe-dual-left">
-                                <a class="pe-dual-src" href="https://dollarliquidity.com/en/valuation/nasdaq-100-forward-pe" target="_blank" rel="noopener noreferrer">DollarLiquidity ↗</a>
-                                <div class="pe-dual-meta" id="lohas-pe-dl-date">資料期別：—</div>
-                            </div>
-                            <div class="pe-dual-right">
-                                <div class="pe-dual-val" id="lohas-pe-dl-val">—</div>
-                                <div class="pe-dual-prev" id="lohas-pe-dl-prev">前值：—</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="pe-compare-bar" id="lohas-pe-compare">
-                        <span>📊 雙站統計比對</span>
-                        <span id="lohas-pe-spread">—</span>
-                    </div>
+                <div class="metric">
+                    <div class="metric-title">Nasdaq 100 Forward P/E <a class="pe-src-link" href="https://dollarliquidity.com/en/valuation/nasdaq-100-forward-pe" target="_blank" rel="noopener noreferrer">(DollarLiquidity ↗)</a></div>
+                    <div id="lohas-pe-dl-val" class="metric-value">—</div>
+                    <div id="lohas-pe-dl-meta" class="metric-sub"></div>
                 </div>
             </div>
             <div class="gauge-wrapper">
@@ -310,43 +270,6 @@
                                 <span class="h-label">1 year ago（1 年前）</span>
                                 <span class="h-right"><span class="h-rating" id="fg-prev-year-txt">—</span><span class="h-badge" id="fg-prev-year-val" style="background:#888;">—</span></span>
                             </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="gauge-zones" id="lohas-gauge-zones">
-                    <div class="gauge-zone" data-zone="extreme-fear" style="border-top-color:#cc0000;border-left-color:#cc0000;">
-                        <div class="z-range">0~&lt;25</div>
-                        <div>
-                            <div class="z-zh" style="color:#cc0000;">極度恐懼</div>
-                            <div class="z-en">(Extreme Fear)</div>
-                        </div>
-                    </div>
-                    <div class="gauge-zone" data-zone="fear" style="border-top-color:#ff9900;border-left-color:#ff9900;">
-                        <div class="z-range">25~&lt;45</div>
-                        <div>
-                            <div class="z-zh" style="color:#ff9900;">恐懼</div>
-                            <div class="z-en">(Fear)</div>
-                        </div>
-                    </div>
-                    <div class="gauge-zone" data-zone="neutral" style="border-top-color:#888888;border-left-color:#888888;">
-                        <div class="z-range">45~&lt;55</div>
-                        <div>
-                            <div class="z-zh" style="color:#666666;">中性</div>
-                            <div class="z-en">(Neutral)</div>
-                        </div>
-                    </div>
-                    <div class="gauge-zone" data-zone="greed" style="border-top-color:#66cc00;border-left-color:#66cc00;">
-                        <div class="z-range">55~&lt;75</div>
-                        <div>
-                            <div class="z-zh" style="color:#4d9900;">貪婪</div>
-                            <div class="z-en">(Greed)</div>
-                        </div>
-                    </div>
-                    <div class="gauge-zone" data-zone="extreme-greed" style="border-top-color:#008800;border-left-color:#008800;">
-                        <div class="z-range">75~100</div>
-                        <div>
-                            <div class="z-zh" style="color:#008800;">極度貪婪</div>
-                            <div class="z-en">(Extreme Greed)</div>
                         </div>
                     </div>
                 </div>
@@ -960,10 +883,6 @@ function renderGauge(fg) {
     renderHistoryRow("fg-prev-week-txt", "fg-prev-week-val", fg.previous1Week);
     renderHistoryRow("fg-prev-month-txt", "fg-prev-month-val", fg.previous1Month);
     renderHistoryRow("fg-prev-year-txt", "fg-prev-year-val", fg.previous1Year);
-
-    document.querySelectorAll("#lohas-gauge-zones .gauge-zone").forEach(el => {
-        el.classList.toggle("active", el.dataset.zone === zone.key);
-    });
 }
 
 function fmtPeDelta(change) {
@@ -971,7 +890,7 @@ function fmtPeDelta(change) {
     const n = Number(change);
     const sign = n > 0 ? "+" : "";
     const color = n > 0 ? "#d92d20" : (n < 0 ? "#059669" : "#6b7686");
-    return `<span style="color:${color};font-weight:700;margin-left:4px;">(${sign}${n.toFixed(2)})</span>`;
+    return `<span style="color:${color};font-weight:700;margin-left:4px;font-size:13px;">(${sign}${n.toFixed(2)})</span>`;
 }
 
 function renderMarketIndicators(ind) {
@@ -994,53 +913,20 @@ function renderMarketIndicators(ind) {
     }
 
     const pe = ind.nasdaq100ForwardPe || {};
-    const mm = pe.macromicro || {};
     const dl = pe.dollarliquidity || {};
-    const mmValEl = document.getElementById("lohas-pe-mm-val");
-    const mmDateEl = document.getElementById("lohas-pe-mm-date");
-    const mmPrevEl = document.getElementById("lohas-pe-mm-prev");
     const dlValEl = document.getElementById("lohas-pe-dl-val");
-    const dlDateEl = document.getElementById("lohas-pe-dl-date");
-    const dlPrevEl = document.getElementById("lohas-pe-dl-prev");
-
-    if (mmValEl) mmValEl.innerHTML = mm.value != null ? `${Number(mm.value).toFixed(2)}x${fmtPeDelta(mm.change)}` : "—";
-    if (mmDateEl) mmDateEl.textContent = mm.date ? `最新期別：${mm.date}` : "最新期別：—";
-    if (mmPrevEl) {
-        mmPrevEl.textContent = mm.previousValue != null
-            ? `前值：${Number(mm.previousValue).toFixed(2)}x${mm.previousDate ? " (" + mm.previousDate + ")" : ""}`
-            : "前值：—";
-    }
+    const dlMetaEl = document.getElementById("lohas-pe-dl-meta");
 
     if (dlValEl) dlValEl.innerHTML = dl.value != null ? `${Number(dl.value).toFixed(2)}x${fmtPeDelta(dl.change)}` : "—";
-    if (dlDateEl) dlDateEl.textContent = dl.date ? `最新日期：${dl.date}` : "最新日期：—";
-    if (dlPrevEl) {
-        dlPrevEl.textContent = dl.previousValue != null
-            ? `前值：${Number(dl.previousValue).toFixed(2)}x${dl.previousDate ? " (" + dl.previousDate + ")" : ""}`
-            : "前值：—";
+    if (dlMetaEl) {
+        const prevPart = dl.previousValue != null ? `｜前值 ${Number(dl.previousValue).toFixed(2)}x` : "";
+        dlMetaEl.textContent = dl.date ? `${dl.date}${prevPart}` : "";
     }
-
-    const spreadEl = document.getElementById("lohas-pe-spread");
-    if (spreadEl) {
-        if (mm.value != null && dl.value != null) {
-            const diff = Math.round((Number(mm.value) - Number(dl.value)) * 100) / 100;
-            const avg = Math.round(((Number(mm.value) + Number(dl.value)) / 2) * 100) / 100;
-            const sign = diff > 0 ? "+" : "";
-            spreadEl.innerHTML = `均值 <strong>${avg.toFixed(2)}x</strong>｜差值 (M平方 − DL)：<strong>${sign}${diff.toFixed(2)}</strong>`;
-        } else {
-            spreadEl.textContent = "—";
-        }
-    }
-}
-
-function fmtYm(dateStr) {
-    if (!dateStr) return null;
-    const s = String(dateStr).trim();
-    return /^\d{4}-\d{2}-01$/.test(s) ? s.slice(0, 7) : s;
 }
 
 async function refreshLiveMarketIndicators() {
     if (!STATIC || !WORKER_BASE_URL) return;
-    const next = JSON.parse(JSON.stringify(marketIndicators || {vix: {}, nasdaq100ForwardPe: {macromicro: {}, dollarliquidity: {}}}));
+    const next = JSON.parse(JSON.stringify(marketIndicators || {vix: {}, nasdaq100ForwardPe: {dollarliquidity: {}}}));
     try {
         const vixUrl = "https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?range=5d&interval=1d";
         const j = await (await fetch(proxied(vixUrl))).json();
@@ -1083,33 +969,6 @@ async function refreshLiveMarketIndicators() {
         }
     } catch (e) {
         console.warn("DollarLiquidity PE 即時更新失敗，維持快照", e);
-    }
-    try {
-        // 優先透過 Worker 呼叫 /charts/data/148300 取得最新完整序列（含 2026-10 19.96 與前值 21.55）
-        const mmDataUrl = "https://www.macromicro.me/charts/data/148300";
-        const mmJson = await (await fetch(proxied(mmDataUrl))).json();
-        const cObj = (mmJson.data && mmJson.data["c:148300"]) || {};
-        const series = (cObj.series && cObj.series[0]) || [];
-        const pts = series.filter(r => r && r.length >= 2 && !isNaN(parseFloat(r[1])));
-        if (pts.length) {
-            const latestRow = pts[pts.length - 1];
-            const prevRow = pts.length >= 2 ? pts[pts.length - 2] : null;
-            const val = Math.round(parseFloat(latestRow[1]) * 100) / 100;
-            const prevVal = prevRow ? Math.round(parseFloat(prevRow[1]) * 100) / 100 : null;
-            next.nasdaq100ForwardPe.macromicro.value = val;
-            next.nasdaq100ForwardPe.macromicro.date = fmtYm(latestRow[0]);
-            next.nasdaq100ForwardPe.macromicro.rawDate = String(latestRow[0]);
-            next.nasdaq100ForwardPe.macromicro.previousValue = prevVal;
-            next.nasdaq100ForwardPe.macromicro.previousDate = prevRow ? fmtYm(prevRow[0]) : null;
-            next.nasdaq100ForwardPe.macromicro.change = prevVal != null ? Math.round((val - prevVal) * 100) / 100 : null;
-        }
-    } catch (e) {
-        console.warn("MacroMicro PE 即時更新失敗，維持快照", e);
-    }
-    const mmVal = next.nasdaq100ForwardPe.macromicro.value;
-    const dlVal = next.nasdaq100ForwardPe.dollarliquidity.value;
-    if (mmVal != null && dlVal != null) {
-        next.nasdaq100ForwardPe.spread = Math.round((mmVal - dlVal) * 100) / 100;
     }
     marketIndicators = next;
     renderMarketIndicators(marketIndicators);
