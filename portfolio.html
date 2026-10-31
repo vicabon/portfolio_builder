@@ -75,8 +75,21 @@
         .metric-title { font-size: 11px; color: var(--muted); }
         .metric-value { font-size: 20px; font-weight: bold; color: var(--ink); margin-top: 5px; }
         .metric-sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
+        .metric-badge { display: inline-block; margin-top: 5px; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; }
         .pe-src-link { font-size: 11px; color: var(--accent); text-decoration: none; font-weight: 600; }
         .pe-src-link:hover { text-decoration: underline; }
+        /* VIX 市場情緒分級 & Nasdaq100 Forward P/E 價值區間 參考面板 */
+        .indicator-guides { display: grid; grid-template-columns: 1.2fr 1fr; gap: 14px; margin-top: 14px; }
+        .guide-box { background: #f8fafc; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+        .guide-title { font-size: 13px; font-weight: 700; color: var(--ink); margin: 0 0 8px; display: flex; justify-content: space-between; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .guide-title .g-cur { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
+        .guide-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 5px; }
+        .guide-item { display: flex; align-items: baseline; gap: 8px; padding: 5px 8px; border-radius: 6px; border: 1px solid transparent; border-left: 4px solid #cbd5e1; background: #ffffff; font-size: 12px; line-height: 1.4; transition: all 0.15s ease; }
+        .guide-item.active { border-color: var(--ink); box-shadow: 0 2px 6px rgba(16,24,40,0.1); font-weight: 600; transform: translateX(2px); }
+        .guide-item .g-range { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 700; min-width: 68px; white-space: nowrap; color: var(--ink); }
+        .guide-item .g-tag { font-weight: 700; min-width: 78px; white-space: nowrap; }
+        .guide-item .g-desc { color: var(--muted); font-size: 11.5px; flex: 1; }
+        .guide-item.active .g-desc { color: var(--ink); }
         /* CNN Fear & Greed 半圓儀表板樣式（參考 edition.cnn.com/markets/fear-and-greed） */
         .gauge-wrapper { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 16px; }
         .gauge-header { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
@@ -115,6 +128,9 @@
             .metric-box { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
             .metric { min-width: 0; padding: 10px 8px; }
             .metric-value { font-size: 16px; }
+            .indicator-guides { grid-template-columns: 1fr; gap: 10px; }
+            .guide-item { flex-wrap: wrap; gap: 4px 8px; }
+            .guide-item .g-desc { width: 100%; }
             .cnn-fg-layout { grid-template-columns: 1fr; padding: 12px; gap: 12px; }
             .price-box { font-size: 17px; }
         }
@@ -230,12 +246,86 @@
                 <div class="metric">
                     <div class="metric-title">CBOE VIX 恐慌指數</div>
                     <div id="lohas-vix-value" class="metric-value">—</div>
+                    <div id="lohas-vix-badge"></div>
                     <div id="lohas-vix-date" class="metric-sub"></div>
                 </div>
                 <div class="metric">
                     <div class="metric-title">Nasdaq 100 Forward P/E <a class="pe-src-link" href="https://dollarliquidity.com/en/valuation/nasdaq-100-forward-pe" target="_blank" rel="noopener noreferrer">(DollarLiquidity ↗)</a></div>
                     <div id="lohas-pe-dl-val" class="metric-value">—</div>
+                    <div id="lohas-pe-dl-badge"></div>
                     <div id="lohas-pe-dl-meta" class="metric-sub"></div>
+                </div>
+            </div>
+            <div class="indicator-guides">
+                <div class="guide-box">
+                    <div class="guide-title">
+                        <span>📉 VIX 五級市場情緒判斷｜VIX 市場情緒分級 歷史經驗參考</span>
+                        <span class="g-cur" id="vix-guide-cur"></span>
+                    </div>
+                    <ul class="guide-list" id="vix-guide-list">
+                        <li class="guide-item" data-vix-tier="calm" style="border-left-color:#059669;">
+                            <span class="g-range">低於 15</span>
+                            <span class="g-tag" style="color:#059669;">市場平靜</span>
+                            <span class="g-desc">投資人信心較高，市場波動較低。</span>
+                        </li>
+                        <li class="guide-item" data-vix-tier="normal" style="border-left-color:#16a34a;">
+                            <span class="g-range">15～20</span>
+                            <span class="g-tag" style="color:#16a34a;">正常波動</span>
+                            <span class="g-desc">接近長期歷史平均值，沒有明顯恐慌。</span>
+                        </li>
+                        <li class="guide-item" data-vix-tier="worry" style="border-left-color:#d97706;">
+                            <span class="g-range">20～30</span>
+                            <span class="g-tag" style="color:#d97706;">擔憂增加</span>
+                            <span class="g-desc">市場不確定性升高，可能出現較大幅度修正。</span>
+                        </li>
+                        <li class="guide-item" data-vix-tier="panic" style="border-left-color:#ea580c;">
+                            <span class="g-range">30～40</span>
+                            <span class="g-tag" style="color:#ea580c;">市場恐慌</span>
+                            <span class="g-desc">避險需求大增，市場可能出現急跌及劇烈反彈。</span>
+                        </li>
+                        <li class="guide-item" data-vix-tier="extreme" style="border-left-color:#dc2626;">
+                            <span class="g-range">40～50</span>
+                            <span class="g-tag" style="color:#dc2626;">極度恐慌</span>
+                            <span class="g-desc">市場壓力非常大，可能出現流動性緊張及強制賣出。</span>
+                        </li>
+                        <li class="guide-item" data-vix-tier="crisis" style="border-left-color:#7f1d1d;">
+                            <span class="g-range">高於 50</span>
+                            <span class="g-tag" style="color:#7f1d1d;">重大危機等級</span>
+                            <span class="g-desc">歷史上非常罕見，常見於重大金融或全球性危機。</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="guide-box">
+                    <div class="guide-title">
+                        <span>💎 Nasdaq 100 Forward P/E 價值區間</span>
+                        <span class="g-cur" id="pe-guide-cur"></span>
+                    </div>
+                    <ul class="guide-list" id="pe-guide-list">
+                        <li class="guide-item" data-pe-tier="very-cheap" style="border-left-color:#059669;">
+                            <span class="g-tag" style="color:#059669;">非常便宜</span>
+                            <span class="g-desc">低於 18 倍</span>
+                        </li>
+                        <li class="guide-item" data-pe-tier="cheap" style="border-left-color:#16a34a;">
+                            <span class="g-tag" style="color:#16a34a;">便宜</span>
+                            <span class="g-desc">18～20 倍</span>
+                        </li>
+                        <li class="guide-item" data-pe-tier="fair-cheap" style="border-left-color:#2563eb;">
+                            <span class="g-tag" style="color:#2563eb;">合理偏便宜</span>
+                            <span class="g-desc">20～23 倍</span>
+                        </li>
+                        <li class="guide-item" data-pe-tier="fair" style="border-left-color:#64748b;">
+                            <span class="g-tag" style="color:#475569;">一般／合理</span>
+                            <span class="g-desc">23～27 倍</span>
+                        </li>
+                        <li class="guide-item" data-pe-tier="expensive" style="border-left-color:#d97706;">
+                            <span class="g-tag" style="color:#d97706;">偏貴</span>
+                            <span class="g-desc">27～30 倍以上</span>
+                        </li>
+                        <li class="guide-item" data-pe-tier="very-expensive" style="border-left-color:#dc2626;">
+                            <span class="g-tag" style="color:#dc2626;">非常昂貴</span>
+                            <span class="g-desc">30～35 倍以上</span>
+                        </li>
+                    </ul>
                 </div>
             </div>
             <div class="gauge-wrapper">
@@ -893,20 +983,66 @@ function fmtPeDelta(change) {
     return `<span style="color:${color};font-weight:700;margin-left:4px;font-size:13px;">(${sign}${n.toFixed(2)})</span>`;
 }
 
+// VIX 市場情緒分級判斷
+function getVixTierInfo(v) {
+    if (v == null || isNaN(v)) return null;
+    const n = Number(v);
+    if (n < 15) return {key: "calm", label: "市場平靜", range: "低於 15", color: "#059669", bg: "#ecfdf5"};
+    if (n < 20) return {key: "normal", label: "正常波動", range: "15～20", color: "#16a34a", bg: "#f0fdf4"};
+    if (n < 30) return {key: "worry", label: "擔憂增加", range: "20～30", color: "#d97706", bg: "#fffbeb"};
+    if (n < 40) return {key: "panic", label: "市場恐慌", range: "30～40", color: "#ea580c", bg: "#fff7ed"};
+    if (n <= 50) return {key: "extreme", label: "極度恐慌", range: "40～50", color: "#dc2626", bg: "#fef2f2"};
+    return {key: "crisis", label: "重大危機等級", range: "高於 50", color: "#7f1d1d", bg: "#fef2f2"};
+}
+
+// Nasdaq 100 Forward P/E 價值區間判斷
+function getPeTierInfo(v) {
+    if (v == null || isNaN(v)) return null;
+    const n = Number(v);
+    if (n < 18) return {key: "very-cheap", label: "非常便宜", range: "低於 18 倍", color: "#059669", bg: "#ecfdf5"};
+    if (n < 20) return {key: "cheap", label: "便宜", range: "18～20 倍", color: "#16a34a", bg: "#f0fdf4"};
+    if (n < 23) return {key: "fair-cheap", label: "合理偏便宜", range: "20～23 倍", color: "#2563eb", bg: "#eff6ff"};
+    if (n < 27) return {key: "fair", label: "一般／合理", range: "23～27 倍", color: "#475569", bg: "#f1f5f9"};
+    if (n < 30) return {key: "expensive", label: "偏貴", range: "27～30 倍以上", color: "#d97706", bg: "#fffbeb"};
+    return {key: "very-expensive", label: "非常昂貴", range: "30～35 倍以上", color: "#dc2626", bg: "#fef2f2"};
+}
+
 function renderMarketIndicators(ind) {
     if (!ind) return;
     const vix = ind.vix || {};
     const vixValEl = document.getElementById("lohas-vix-value");
+    const vixBadgeEl = document.getElementById("lohas-vix-badge");
     const vixDateEl = document.getElementById("lohas-vix-date");
+    const vixCurEl = document.getElementById("vix-guide-cur");
+    const vixTier = getVixTierInfo(vix.value);
+
     if (vixValEl) {
-        if (vix.value != null) {
+        if (vix.value != null && vixTier) {
             vixValEl.textContent = Number(vix.value).toFixed(2);
-            vixValEl.style.color = vix.value >= 30 ? "#cc0000" : (vix.value >= 20 ? "#ff9900" : "#008800");
+            vixValEl.style.color = vixTier.color;
         } else {
             vixValEl.textContent = "—";
             vixValEl.style.color = "var(--ink)";
         }
     }
+    if (vixBadgeEl) {
+        vixBadgeEl.innerHTML = vixTier
+            ? `<span class="metric-badge" style="background:${vixTier.bg};color:${vixTier.color};border:1px solid ${vixTier.color};">${vixTier.label}（${vixTier.range}）</span>`
+            : "";
+    }
+    if (vixCurEl) {
+        if (vixTier) {
+            vixCurEl.textContent = `目前：${Number(vix.value).toFixed(2)} → ${vixTier.label}`;
+            vixCurEl.style.background = vixTier.bg;
+            vixCurEl.style.color = vixTier.color;
+            vixCurEl.style.border = `1px solid ${vixTier.color}`;
+        } else {
+            vixCurEl.textContent = "";
+        }
+    }
+    document.querySelectorAll("#vix-guide-list .guide-item").forEach(el => {
+        el.classList.toggle("active", Boolean(vixTier && el.dataset.vixTier === vixTier.key));
+    });
     if (vixDateEl) {
         const prevTxt = vix.previousValue != null ? `｜前收 ${Number(vix.previousValue).toFixed(2)}` : "";
         vixDateEl.textContent = vix.date ? `${vix.date}${prevTxt}` : "";
@@ -915,9 +1051,33 @@ function renderMarketIndicators(ind) {
     const pe = ind.nasdaq100ForwardPe || {};
     const dl = pe.dollarliquidity || {};
     const dlValEl = document.getElementById("lohas-pe-dl-val");
+    const dlBadgeEl = document.getElementById("lohas-pe-dl-badge");
     const dlMetaEl = document.getElementById("lohas-pe-dl-meta");
+    const peCurEl = document.getElementById("pe-guide-cur");
+    const peTier = getPeTierInfo(dl.value);
 
-    if (dlValEl) dlValEl.innerHTML = dl.value != null ? `${Number(dl.value).toFixed(2)}x${fmtPeDelta(dl.change)}` : "—";
+    if (dlValEl) {
+        dlValEl.innerHTML = dl.value != null ? `${Number(dl.value).toFixed(2)}x${fmtPeDelta(dl.change)}` : "—";
+        if (peTier) dlValEl.style.color = peTier.color;
+    }
+    if (dlBadgeEl) {
+        dlBadgeEl.innerHTML = peTier
+            ? `<span class="metric-badge" style="background:${peTier.bg};color:${peTier.color};border:1px solid ${peTier.color};">${peTier.label}（${peTier.range}）</span>`
+            : "";
+    }
+    if (peCurEl) {
+        if (peTier) {
+            peCurEl.textContent = `目前：${Number(dl.value).toFixed(2)}x → ${peTier.label}`;
+            peCurEl.style.background = peTier.bg;
+            peCurEl.style.color = peTier.color;
+            peCurEl.style.border = `1px solid ${peTier.color}`;
+        } else {
+            peCurEl.textContent = "";
+        }
+    }
+    document.querySelectorAll("#pe-guide-list .guide-item").forEach(el => {
+        el.classList.toggle("active", Boolean(peTier && el.dataset.peTier === peTier.key));
+    });
     if (dlMetaEl) {
         const prevPart = dl.previousValue != null ? `｜前值 ${Number(dl.previousValue).toFixed(2)}x` : "";
         dlMetaEl.textContent = dl.date ? `${dl.date}${prevPart}` : "";
