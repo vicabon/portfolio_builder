@@ -210,8 +210,14 @@ def get_feargreed():
     return jsonify(portfolio_data.get_fear_greed())
 
 
+@app.route("/api/market-indicators", methods=["GET"])
+def get_market_indicators():
+    """VIX 指數與 Nasdaq 100 Forward P/E Ratio（MacroMicro + DollarLiquidity）。"""
+    return jsonify(portfolio_data.get_market_indicators())
+
+
 def build_lohas_bundle(holdings):
-    """靜態建置用：把每檔持股（排除現金、同 ticker 去重）的五線譜 + Fear&Greed 一次算好。"""
+    """靜態建置用：把每檔持股（排除現金、同 ticker 去重）的五線譜 + Fear&Greed + 市場指標一次算好。"""
     tickers = sorted({
         h["ticker"].upper()
         for h in holdings
@@ -226,6 +232,7 @@ def build_lohas_bundle(holdings):
         "tickers": list(charts.keys()),
         "charts": charts,
         "fearGreed": portfolio_data.get_fear_greed(),
+        "marketIndicators": portfolio_data.get_market_indicators(),
     }
 
 

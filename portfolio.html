@@ -71,15 +71,45 @@
         .ticker-picker label { display: block; color: var(--muted); font-size: 13px; font-weight: 600; margin-bottom: 7px; }
         .ticker-picker select { min-width: 240px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink); font-size: 16px; }
         .metric-box { display: flex; gap: 15px; margin: 18px 0 4px; flex-wrap: wrap; }
-        .metric { background: #f8fafc; border: 1px solid var(--line); padding: 12px 20px; border-radius: 8px; flex: 1; min-width: 140px; text-align: center; }
+        .metric { background: #f8fafc; border: 1px solid var(--line); padding: 12px 16px; border-radius: 8px; flex: 1; min-width: 150px; text-align: center; }
         .metric-title { font-size: 11px; color: var(--muted); }
         .metric-value { font-size: 20px; font-weight: bold; color: var(--ink); margin-top: 5px; }
-        .gauge-wrapper { margin-top: 18px; }
-        .gauge-title { font-size: 14px; font-weight: bold; margin-bottom: 12px; }
-        .gauge-bar-bg { background: #e9ecef; height: 20px; border-radius: 10px; position: relative; overflow: visible; }
-        .gauge-fill { height: 100%; border-radius: 10px 0 0 10px; width: 0; }
-        .gauge-text { position: absolute; top: 1px; font-weight: bold; font-size: 12px; }
-        .gauge-labels { display: flex; justify-content: space-between; margin-top: 6px; font-size: 11px; color: var(--muted); font-weight: bold; }
+        .metric-sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
+        .pe-dual-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; text-align: left; }
+        .pe-dual-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; }
+        .pe-dual-left { display: flex; flex-direction: column; gap: 2px; }
+        .pe-dual-src { font-size: 12px; color: var(--accent); text-decoration: none; font-weight: 700; white-space: nowrap; }
+        .pe-dual-src:hover { text-decoration: underline; }
+        .pe-dual-meta { font-size: 11px; color: var(--muted); white-space: nowrap; }
+        .pe-dual-right { text-align: right; white-space: nowrap; }
+        .pe-dual-val { font-size: 17px; font-weight: 800; color: var(--ink); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+        .pe-dual-prev { font-size: 11px; color: var(--muted); margin-top: 2px; }
+        .pe-compare-bar { margin-top: 6px; padding: 5px 10px; border-radius: 6px; background: #eef2f8; font-size: 11px; color: var(--ink); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; }
+        /* CNN Fear & Greed 半圓儀表板樣式（參考 edition.cnn.com/markets/fear-and-greed） */
+        .gauge-wrapper { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 16px; }
+        .gauge-header { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+        .gauge-title { font-size: 15px; font-weight: 700; margin: 0; }
+        .gauge-link { font-size: 12px; color: var(--accent); text-decoration: none; font-weight: 600; }
+        .gauge-link:hover { text-decoration: underline; }
+        .cnn-fg-layout { display: grid; grid-template-columns: 1.15fr 1fr; gap: 20px; align-items: center; background: #f8fafc; border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+        .cnn-dial-box { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .cnn-dial-svg { width: 100%; max-width: 390px; height: auto; overflow: visible; }
+        .cnn-dial-status { margin-top: -6px; text-align: center; }
+        .cnn-dial-badge { display: inline-block; padding: 4px 14px; border-radius: 999px; font-size: 13px; font-weight: 800; letter-spacing: 0.02em; }
+        .cnn-fg-side { display: flex; flex-direction: column; gap: 10px; }
+        .cnn-history-title { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px; }
+        .cnn-history-list { display: flex; flex-direction: column; gap: 7px; }
+        .cnn-history-row { display: flex; justify-content: space-between; align-items: center; background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; font-size: 13px; }
+        .cnn-history-row .h-label { color: var(--muted); font-weight: 600; }
+        .cnn-history-row .h-right { display: flex; align-items: center; gap: 8px; }
+        .cnn-history-row .h-rating { font-size: 12px; font-weight: 700; }
+        .cnn-history-row .h-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 38px; height: 24px; padding: 0 8px; border-radius: 999px; font-size: 12px; font-weight: 800; color: #fff; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+        .gauge-zones { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 12px; }
+        .gauge-zone { border: 1px solid var(--line); border-top: 4px solid #ccc; border-radius: 8px; padding: 8px 6px; text-align: center; background: #f8fafc; transition: all 0.2s ease; }
+        .gauge-zone.active { background: #fff; box-shadow: 0 2px 8px rgba(16,24,40,0.12); transform: translateY(-2px); border-color: var(--ink); }
+        .gauge-zone .z-range { font-size: 12px; font-weight: 800; color: var(--ink); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+        .gauge-zone .z-zh { font-size: 13px; font-weight: 700; margin-top: 2px; }
+        .gauge-zone .z-en { font-size: 10px; color: var(--muted); margin-top: 1px; }
         .price-box { background: #f1f5f9; padding: 12px 20px; border-radius: 6px; font-size: 20px; font-weight: bold; margin: 4px 0 15px; display: flex; justify-content: space-between; }
         .grid-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; padding: 0; margin: 0; list-style: none; }
         .grid-list li { padding: 12px; background: #f8fafc; border-radius: 6px; border-left: 4px solid #ccc; display: flex; flex-direction: column; gap: 4px; }
@@ -96,10 +126,12 @@
             th, td { padding: 9px 8px; font-size: 13px; }
             .tab { padding: 9px 12px; font-size: 14px; }
             .ticker-picker select { min-width: 0; width: 100%; }
-            .metric-box { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-            .metric { min-width: 0; padding: 10px 6px; }
-            .metric-value { font-size: 15px; }
-            .gauge-labels { font-size: 9px; }
+            .metric-box { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+            .metric { min-width: 0; padding: 10px 8px; }
+            .metric-value { font-size: 16px; }
+            .cnn-fg-layout { grid-template-columns: 1fr; padding: 12px; gap: 12px; }
+            .gauge-zones { grid-template-columns: 1fr; gap: 6px; }
+            .gauge-zone { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; border-top-width: 1px; border-left: 5px solid #ccc; text-align: left; }
             .price-box { font-size: 17px; }
         }
     </style>
@@ -211,25 +243,133 @@
                     <div class="metric-title">CNN 即時情緒狀態</div>
                     <div id="lohas-fg-rating" class="metric-value"></div>
                 </div>
+                <div class="metric">
+                    <div class="metric-title">CBOE VIX 恐慌指數</div>
+                    <div id="lohas-vix-value" class="metric-value">—</div>
+                    <div id="lohas-vix-date" class="metric-sub"></div>
+                </div>
+                <div class="metric" style="flex: 1.7; min-width: 270px;">
+                    <div class="metric-title">Nasdaq 100 Forward P/E Ratio（雙來源比對）</div>
+                    <div class="pe-dual-list">
+                        <div class="pe-dual-row">
+                            <div class="pe-dual-left">
+                                <a class="pe-dual-src" href="https://www.macromicro.me/charts/148300/NASDAQ-100-Index-Forward-PE-Ratio" target="_blank" rel="noopener noreferrer">MacroMicro 財經M平方 ↗</a>
+                                <div class="pe-dual-meta" id="lohas-pe-mm-date">資料期別：—</div>
+                            </div>
+                            <div class="pe-dual-right">
+                                <div class="pe-dual-val" id="lohas-pe-mm-val">—</div>
+                                <div class="pe-dual-prev" id="lohas-pe-mm-prev">前值：—</div>
+                            </div>
+                        </div>
+                        <div class="pe-dual-row">
+                            <div class="pe-dual-left">
+                                <a class="pe-dual-src" href="https://dollarliquidity.com/en/valuation/nasdaq-100-forward-pe" target="_blank" rel="noopener noreferrer">DollarLiquidity ↗</a>
+                                <div class="pe-dual-meta" id="lohas-pe-dl-date">資料期別：—</div>
+                            </div>
+                            <div class="pe-dual-right">
+                                <div class="pe-dual-val" id="lohas-pe-dl-val">—</div>
+                                <div class="pe-dual-prev" id="lohas-pe-dl-prev">前值：—</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pe-compare-bar" id="lohas-pe-compare">
+                        <span>📊 雙站統計比對</span>
+                        <span id="lohas-pe-spread">—</span>
+                    </div>
+                </div>
             </div>
             <div class="gauge-wrapper">
-                <div class="gauge-title" id="lohas-gauge-title">📊 CNN Fear &amp; Greed Index 即時量表</div>
-                <div class="gauge-bar-bg">
-                    <div class="gauge-fill" id="lohas-gauge-fill"></div>
-                    <span class="gauge-text" id="lohas-gauge-text"></span>
+                <div class="gauge-header">
+                    <div class="gauge-title" id="lohas-gauge-title">📊 CNN Fear &amp; Greed Index 即時量表</div>
+                    <a class="gauge-link" href="https://edition.cnn.com/markets/fear-and-greed" target="_blank" rel="noopener noreferrer">CNN Fear &amp; Greed 官網 ↗</a>
                 </div>
-                <div class="gauge-labels">
-                    <span style="color:#cc0000;">極度恐慌 (0)</span>
-                    <span style="color:#ff9900;">恐慌 (25)</span>
-                    <span style="color:#888888;">中立 (50)</span>
-                    <span style="color:#66cc00;">貪婪 (75)</span>
-                    <span style="color:#008800;">極度貪婪 (100)</span>
+                <div class="cnn-fg-layout">
+                    <div class="cnn-dial-box">
+                        <svg id="cnn-dial-svg" class="cnn-dial-svg" viewBox="0 0 360 205" aria-label="CNN Fear & Greed 半圓量表"></svg>
+                        <div class="cnn-dial-status">
+                            <span id="cnn-dial-badge" class="cnn-dial-badge">—</span>
+                            <div id="cnn-dial-updated" class="muted-note" style="margin-top:4px;font-size:11px;"></div>
+                        </div>
+                    </div>
+                    <div class="cnn-fg-side">
+                        <div class="cnn-history-title">CNN 歷史情緒時點對照</div>
+                        <div class="cnn-history-list" id="cnn-history-list">
+                            <div class="cnn-history-row">
+                                <span class="h-label">Previous close（前次收盤）</span>
+                                <span class="h-right"><span class="h-rating" id="fg-prev-close-txt">—</span><span class="h-badge" id="fg-prev-close-val" style="background:#888;">—</span></span>
+                            </div>
+                            <div class="cnn-history-row">
+                                <span class="h-label">1 week ago（1 週前）</span>
+                                <span class="h-right"><span class="h-rating" id="fg-prev-week-txt">—</span><span class="h-badge" id="fg-prev-week-val" style="background:#888;">—</span></span>
+                            </div>
+                            <div class="cnn-history-row">
+                                <span class="h-label">1 month ago（1 個月前）</span>
+                                <span class="h-right"><span class="h-rating" id="fg-prev-month-txt">—</span><span class="h-badge" id="fg-prev-month-val" style="background:#888;">—</span></span>
+                            </div>
+                            <div class="cnn-history-row">
+                                <span class="h-label">1 year ago（1 年前）</span>
+                                <span class="h-right"><span class="h-rating" id="fg-prev-year-txt">—</span><span class="h-badge" id="fg-prev-year-val" style="background:#888;">—</span></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="gauge-zones" id="lohas-gauge-zones">
+                    <div class="gauge-zone" data-zone="extreme-fear" style="border-top-color:#cc0000;border-left-color:#cc0000;">
+                        <div class="z-range">0~&lt;25</div>
+                        <div>
+                            <div class="z-zh" style="color:#cc0000;">極度恐懼</div>
+                            <div class="z-en">(Extreme Fear)</div>
+                        </div>
+                    </div>
+                    <div class="gauge-zone" data-zone="fear" style="border-top-color:#ff9900;border-left-color:#ff9900;">
+                        <div class="z-range">25~&lt;45</div>
+                        <div>
+                            <div class="z-zh" style="color:#ff9900;">恐懼</div>
+                            <div class="z-en">(Fear)</div>
+                        </div>
+                    </div>
+                    <div class="gauge-zone" data-zone="neutral" style="border-top-color:#888888;border-left-color:#888888;">
+                        <div class="z-range">45~&lt;55</div>
+                        <div>
+                            <div class="z-zh" style="color:#666666;">中性</div>
+                            <div class="z-en">(Neutral)</div>
+                        </div>
+                    </div>
+                    <div class="gauge-zone" data-zone="greed" style="border-top-color:#66cc00;border-left-color:#66cc00;">
+                        <div class="z-range">55~&lt;75</div>
+                        <div>
+                            <div class="z-zh" style="color:#4d9900;">貪婪</div>
+                            <div class="z-en">(Greed)</div>
+                        </div>
+                    </div>
+                    <div class="gauge-zone" data-zone="extreme-greed" style="border-top-color:#008800;border-left-color:#008800;">
+                        <div class="z-range">75~100</div>
+                        <div>
+                            <div class="z-zh" style="color:#008800;">極度貪婪</div>
+                            <div class="z-en">(Extreme Greed)</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="card">
-            <div id="lohas-chart-title" class="chart-title" style="font-weight:bold;margin-bottom:10px;"></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px;">
+                <div id="lohas-chart-title" class="chart-title" style="font-weight:bold;"></div>
+                <div class="toolbar" style="margin-bottom:0;">
+                    <div class="rng" id="lohas-range-buttons">
+                        <button data-range="1D">1D</button>
+                        <button data-range="5D">5D</button>
+                        <button data-range="1M">1M</button>
+                        <button data-range="6M">6M</button>
+                        <button data-range="YTD">YTD</button>
+                        <button data-range="1Y">1Y</button>
+                        <button data-range="3Y" class="active">3Y</button>
+                        <button data-range="5Y">5Y</button>
+                    </div>
+                </div>
+            </div>
             <div id="lohas-chart"></div>
+            <div id="lohas-range-status" class="muted-note" style="margin-top:8px;"></div>
         </div>
         <div id="lohas-sidebar" class="card"></div>
     </div><!-- /tab-lohas -->
@@ -614,12 +754,15 @@ document.getElementById("range-buttons").addEventListener("click", e => {
 // ================= 樂活五線譜分頁 =================
 let lohasCache = {};        // {ticker: chartData bundle}
 let fearGreed = null;
+let marketIndicators = null;
 let lohasSelected = null;
 let lohasLoaded = false;
-const LOHAS_WINDOW = 875; // 與後端 portfolio_data.py 的 _LOHAS_WINDOW 保持一致
+let currentLohasRange = "3Y";
+const LOHAS_WINDOW = 875;         // 回歸與標準差計算窗口（約 3.5 年交易日）
+const LOHAS_DISPLAY_WINDOW = 1260; // 最大顯示窗口（約 5 年交易日）
 
 // 用最新即時收盤價更新五線譜的最後一天，並重新回歸整個窗口的 TL/±SD
-// （邏輯對應 portfolio_data.py 的 get_lohas：一次線性回歸 + 全樣本標準差）
+// （邏輯對應 portfolio_data.py 的 get_lohas：最近 875 日做一次線性回歸 + 全樣本標準差，並延伸至 5Y 顯示窗口）
 function recomputeLohasBundle(bundle, latestClose, todayDateStr) {
     if (!bundle || !bundle.chartData || !bundle.chartData.length || latestClose == null) return bundle;
     const data = bundle.chartData.map(r => ({...r}));
@@ -629,55 +772,347 @@ function recomputeLohasBundle(bundle, latestClose, todayDateStr) {
     } else {
         data.push({date: todayDateStr, close: latestClose});
     }
-    const windowed = data.slice(-LOHAS_WINDOW);
-    const n = windowed.length;
-    const closes = windowed.map(r => r.close);
-    const xs = closes.map((_, i) => i);
+    const displayData = data.slice(-LOHAS_DISPLAY_WINDOW);
+    const regData = displayData.slice(-LOHAS_WINDOW);
+    const n = regData.length;
+    const regCloses = regData.map(r => r.close);
+    const xs = regCloses.map((_, i) => i);
     const xMean = xs.reduce((a, b) => a + b, 0) / n;
-    const yMean = closes.reduce((a, b) => a + b, 0) / n;
+    const yMean = regCloses.reduce((a, b) => a + b, 0) / n;
     let num = 0, den = 0;
-    for (let i = 0; i < n; i++) { num += (xs[i] - xMean) * (closes[i] - yMean); den += (xs[i] - xMean) ** 2; }
+    for (let i = 0; i < n; i++) { num += (xs[i] - xMean) * (regCloses[i] - yMean); den += (xs[i] - xMean) ** 2; }
     const slope = den === 0 ? 0 : num / den;
     const intercept = yMean - slope * xMean;
-    const tlArr = xs.map(x => slope * x + intercept);
     let sumSqDiff = 0;
-    for (let i = 0; i < n; i++) sumSqDiff += (closes[i] - tlArr[i]) ** 2;
+    for (let i = 0; i < n; i++) {
+        const tlVal = slope * i + intercept;
+        sumSqDiff += (regCloses[i] - tlVal) ** 2;
+    }
     const sd = Math.sqrt(sumSqDiff / n);
 
-    const chartData = windowed.map((r, i) => ({
-        date: r.date,
-        close: Math.round(r.close * 100) / 100,
-        tl: Math.round(tlArr[i] * 100) / 100,
-        p1sd: Math.round((tlArr[i] + sd) * 100) / 100,
-        p2sd: Math.round((tlArr[i] + 2 * sd) * 100) / 100,
-        m1sd: Math.round((tlArr[i] - sd) * 100) / 100,
-        m2sd: Math.round((tlArr[i] - 2 * sd) * 100) / 100,
-    }));
+    const offset = displayData.length - regData.length;
+    const chartData = displayData.map((r, i) => {
+        const tlVal = slope * (i - offset) + intercept;
+        return {
+            date: r.date,
+            close: Math.round(r.close * 100) / 100,
+            tl: Math.round(tlVal * 100) / 100,
+            p1sd: Math.round((tlVal + sd) * 100) / 100,
+            p2sd: Math.round((tlVal + 2 * sd) * 100) / 100,
+            m1sd: Math.round((tlVal - sd) * 100) / 100,
+            m2sd: Math.round((tlVal - 2 * sd) * 100) / 100,
+        };
+    });
     return {...bundle, chartData, lastDate: chartData[chartData.length - 1].date};
 }
 
+// 依時間軸區間裁切樂活五線譜資料。range: 1D/5D/1M/6M/YTD/1Y/3Y/5Y
+function sliceLohasByRange(chartData, range) {
+    if (!chartData || !chartData.length) return [];
+    const n = chartData.length;
+    let cutoffIdx;
+    if (range === "YTD") {
+        const year = chartData[n - 1].date.slice(0, 4);
+        cutoffIdx = chartData.findIndex(r => r.date >= year + "-01-01");
+        if (cutoffIdx < 0) cutoffIdx = 0;
+    } else {
+        const days = {
+            "1D": 2,
+            "5D": 5,
+            "1M": 21,
+            "6M": 126,
+            "1Y": 252,
+            "3Y": 756,
+            "5Y": 1260,
+        }[range] || n;
+        cutoffIdx = Math.max(0, n - days);
+    }
+    return chartData.slice(cutoffIdx);
+}
+
+function gaugeZoneInfo(score) {
+    if (score < 25) return {key: "extreme-fear", color: "#cc0000", bg: "#fde8e8", zh: "極度恐懼", en: "Extreme Fear", label: "0~<25 極度恐懼 (Extreme Fear)"};
+    if (score < 45) return {key: "fear", color: "#ff9900", bg: "#fff4e5", zh: "恐懼", en: "Fear", label: "25~<45 恐懼 (Fear)"};
+    if (score < 55) return {key: "neutral", color: "#888888", bg: "#f1f3f5", zh: "中性", en: "Neutral", label: "45~<55 中性 (Neutral)"};
+    if (score < 75) return {key: "greed", color: "#66cc00", bg: "#eefbe6", zh: "貪婪", en: "Greed", label: "55~<75 貪婪 (Greed)"};
+    return {key: "extreme-greed", color: "#008800", bg: "#e3f7e8", zh: "極度貪婪", en: "Extreme Greed", label: "75~100 極度貪婪 (Extreme Greed)"};
+}
+
 function gaugeColor(score) {
-    if (score <= 25) return "#cc0000";
-    if (score <= 45) return "#ff9900";
-    if (score <= 55) return "#888888";
-    if (score <= 75) return "#66cc00";
-    return "#008800";
+    return gaugeZoneInfo(score).color;
+}
+
+// 繪製 CNN Fear & Greed 風格的半圓弧形量表（5 個區間扇形 + 刻度 + 指針 + 中央分數圓盤）
+function buildCnnDialSvg(score, activeZone) {
+    const cx = 180, cy = 162;
+    const rOuter = 132, rInner = 82;
+    const deg2rad = d => (d * Math.PI) / 180;
+    // 分數 v (0~100) 對應角度：180° (左) -> 0° (右)
+    const valToAngle = v => 180 - (Math.min(100, Math.max(0, v)) / 100) * 180;
+    const pt = (r, deg) => {
+        const rad = deg2rad(deg);
+        return [cx + r * Math.cos(rad), cy - r * Math.sin(rad)];
+    };
+    const sectorPath = (vStart, vEnd, rOut, rIn) => {
+        // 留微小角度間隙讓五個扇形分界清楚
+        const a1 = valToAngle(vStart) - (vStart === 0 ? 0 : 0.7);
+        const a2 = valToAngle(vEnd) + (vEnd === 100 ? 0 : 0.7);
+        const [x1, y1] = pt(rOut, a1);
+        const [x2, y2] = pt(rOut, a2);
+        const [x3, y3] = pt(rIn, a2);
+        const [x4, y4] = pt(rIn, a1);
+        return `M ${x1.toFixed(2)} ${y1.toFixed(2)} A ${rOut} ${rOut} 0 0 1 ${x2.toFixed(2)} ${y2.toFixed(2)} L ${x3.toFixed(2)} ${y3.toFixed(2)} A ${rIn} ${rIn} 0 0 0 ${x4.toFixed(2)} ${y4.toFixed(2)} Z`;
+    };
+
+    const segments = [
+        {key: "extreme-fear", s: 0, e: 25, color: "#cc0000", zh: "極度恐懼", en: "EXTREME FEAR"},
+        {key: "fear", s: 25, e: 45, color: "#ff9900", zh: "恐懼", en: "FEAR"},
+        {key: "neutral", s: 45, e: 55, color: "#888888", zh: "中性", en: "NEUTRAL"},
+        {key: "greed", s: 55, e: 75, color: "#66cc00", zh: "貪婪", en: "GREED"},
+        {key: "extreme-greed", s: 75, e: 100, color: "#008800", zh: "極度貪婪", en: "EXTREME GREED"},
+    ];
+
+    let arcsHtml = "";
+    segments.forEach(seg => {
+        const isAct = seg.key === activeZone.key;
+        const ro = isAct ? rOuter + 5 : rOuter;
+        const opacity = isAct ? 1.0 : 0.32;
+        const stroke = isAct ? `stroke="#1a2233" stroke-width="1.5"` : "";
+        arcsHtml += `<path d="${sectorPath(seg.s, seg.e, ro, rInner)}" fill="${seg.color}" fill-opacity="${opacity}" ${stroke}/>`;
+
+        // 扇形中點外側標籤
+        const midVal = (seg.s + seg.e) / 2;
+        const midAng = valToAngle(midVal);
+        const [lx, ly] = pt((ro + rInner) / 2, midAng);
+        const txtColor = isAct ? "#ffffff" : "#1a2233";
+        arcsHtml += `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" dominant-baseline="central" font-size="10" font-weight="800" fill="${txtColor}" style="pointer-events:none;">${seg.zh}</text>`;
+    });
+
+    // 邊界刻度數字 (0, 25, 45, 55, 75, 100)
+    let ticksHtml = "";
+    [0, 25, 45, 55, 75, 100].forEach(t => {
+        const ang = valToAngle(t);
+        const [tx, ty] = pt(rOuter + 16, ang);
+        ticksHtml += `<text x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="700" fill="#6b7686">${t}</text>`;
+    });
+
+    // 指針 (Needle)
+    const needleAng = valToAngle(score);
+    const [nx, ny] = pt(rOuter - 8, needleAng);
+    const [b1x, b1y] = pt(6, needleAng + 90);
+    const [b2x, b2y] = pt(6, needleAng - 90);
+    const needleHtml = `
+        <polygon points="${nx.toFixed(1)},${ny.toFixed(1)} ${b1x.toFixed(1)},${b1y.toFixed(1)} ${b2x.toFixed(1)},${b2y.toFixed(1)}" fill="#1a2233"/>
+        <circle cx="${cx}" cy="${cy}" r="36" fill="#ffffff" stroke="${activeZone.color}" stroke-width="3"/>
+        <text x="${cx}" y="${cy - 4}" text-anchor="middle" dominant-baseline="central" font-size="22" font-weight="800" fill="${activeZone.color}">${Math.round(score)}</text>
+        <text x="${cx}" y="${cy + 14}" text-anchor="middle" dominant-baseline="central" font-size="10" font-weight="700" fill="#6b7686">${score.toFixed(1)}</text>
+    `;
+
+    return arcsHtml + ticksHtml + needleHtml;
+}
+
+function renderHistoryRow(txtId, valId, val) {
+    const txtEl = document.getElementById(txtId);
+    const valEl = document.getElementById(valId);
+    if (!txtEl || !valEl) return;
+    if (val == null || isNaN(val)) {
+        txtEl.textContent = "—";
+        txtEl.style.color = "var(--muted)";
+        valEl.textContent = "—";
+        valEl.style.background = "#94a3b8";
+        return;
+    }
+    const z = gaugeZoneInfo(Number(val));
+    txtEl.textContent = `${z.zh} (${z.en})`;
+    txtEl.style.color = z.color;
+    valEl.textContent = Math.round(Number(val));
+    valEl.title = `精確值：${Number(val).toFixed(1)}`;
+    valEl.style.background = z.color;
 }
 
 function renderGauge(fg) {
-    const score = fg.score, color = gaugeColor(score);
-    document.getElementById("lohas-fg-rating").textContent = fg.rating;
-    document.getElementById("lohas-fg-rating").style.color = color;
+    const score = Number(fg.score || 0);
+    const zone = gaugeZoneInfo(score);
+    const color = zone.color;
+    const ratingEl = document.getElementById("lohas-fg-rating");
+    ratingEl.textContent = `${score} — ${zone.zh} (${zone.en})`;
+    ratingEl.style.color = color;
     document.getElementById("lohas-gauge-title").innerHTML =
-        `📊 CNN Fear &amp; Greed Index 即時量表（當前分數：${score}）`;
-    const fill = document.getElementById("lohas-gauge-fill");
-    fill.style.width = score + "%";
-    fill.style.background = color;
-    const txt = document.getElementById("lohas-gauge-text");
-    txt.textContent = score;
-    txt.style.left = `calc(${score}% - 12px)`;
-    txt.style.color = score < 10 ? "#333" : "#fff";
-    txt.style.textShadow = score < 10 ? "none" : "1px 1px 2px rgba(0,0,0,.5)";
+        `📊 CNN Fear &amp; Greed Index 即時量表（當前分數：<span style="color:${color}">${score}</span>｜區間：<span style="color:${color}">${zone.label}</span>）`;
+
+    const svgEl = document.getElementById("cnn-dial-svg");
+    if (svgEl) {
+        svgEl.innerHTML = buildCnnDialSvg(score, zone);
+    }
+    const badgeEl = document.getElementById("cnn-dial-badge");
+    if (badgeEl) {
+        badgeEl.textContent = `${zone.zh} · ${zone.en.toUpperCase()} (${score})`;
+        badgeEl.style.background = zone.bg;
+        badgeEl.style.color = zone.color;
+        badgeEl.style.border = `1px solid ${zone.color}`;
+    }
+    const updEl = document.getElementById("cnn-dial-updated");
+    if (updEl) {
+        updEl.textContent = fg.timestamp ? `CNN 更新時間：${String(fg.timestamp).slice(0, 19).replace("T", " ")} UTC` : "";
+    }
+
+    renderHistoryRow("fg-prev-close-txt", "fg-prev-close-val", fg.previousClose);
+    renderHistoryRow("fg-prev-week-txt", "fg-prev-week-val", fg.previous1Week);
+    renderHistoryRow("fg-prev-month-txt", "fg-prev-month-val", fg.previous1Month);
+    renderHistoryRow("fg-prev-year-txt", "fg-prev-year-val", fg.previous1Year);
+
+    document.querySelectorAll("#lohas-gauge-zones .gauge-zone").forEach(el => {
+        el.classList.toggle("active", el.dataset.zone === zone.key);
+    });
+}
+
+function fmtPeDelta(change) {
+    if (change == null || isNaN(change)) return "";
+    const n = Number(change);
+    const sign = n > 0 ? "+" : "";
+    const color = n > 0 ? "#d92d20" : (n < 0 ? "#059669" : "#6b7686");
+    return `<span style="color:${color};font-weight:700;margin-left:4px;">(${sign}${n.toFixed(2)})</span>`;
+}
+
+function renderMarketIndicators(ind) {
+    if (!ind) return;
+    const vix = ind.vix || {};
+    const vixValEl = document.getElementById("lohas-vix-value");
+    const vixDateEl = document.getElementById("lohas-vix-date");
+    if (vixValEl) {
+        if (vix.value != null) {
+            vixValEl.textContent = Number(vix.value).toFixed(2);
+            vixValEl.style.color = vix.value >= 30 ? "#cc0000" : (vix.value >= 20 ? "#ff9900" : "#008800");
+        } else {
+            vixValEl.textContent = "—";
+            vixValEl.style.color = "var(--ink)";
+        }
+    }
+    if (vixDateEl) {
+        const prevTxt = vix.previousValue != null ? `｜前收 ${Number(vix.previousValue).toFixed(2)}` : "";
+        vixDateEl.textContent = vix.date ? `${vix.date}${prevTxt}` : "";
+    }
+
+    const pe = ind.nasdaq100ForwardPe || {};
+    const mm = pe.macromicro || {};
+    const dl = pe.dollarliquidity || {};
+    const mmValEl = document.getElementById("lohas-pe-mm-val");
+    const mmDateEl = document.getElementById("lohas-pe-mm-date");
+    const mmPrevEl = document.getElementById("lohas-pe-mm-prev");
+    const dlValEl = document.getElementById("lohas-pe-dl-val");
+    const dlDateEl = document.getElementById("lohas-pe-dl-date");
+    const dlPrevEl = document.getElementById("lohas-pe-dl-prev");
+
+    if (mmValEl) mmValEl.innerHTML = mm.value != null ? `${Number(mm.value).toFixed(2)}x${fmtPeDelta(mm.change)}` : "—";
+    if (mmDateEl) mmDateEl.textContent = mm.date ? `最新期別：${mm.date}` : "最新期別：—";
+    if (mmPrevEl) {
+        mmPrevEl.textContent = mm.previousValue != null
+            ? `前值：${Number(mm.previousValue).toFixed(2)}x${mm.previousDate ? " (" + mm.previousDate + ")" : ""}`
+            : "前值：—";
+    }
+
+    if (dlValEl) dlValEl.innerHTML = dl.value != null ? `${Number(dl.value).toFixed(2)}x${fmtPeDelta(dl.change)}` : "—";
+    if (dlDateEl) dlDateEl.textContent = dl.date ? `最新日期：${dl.date}` : "最新日期：—";
+    if (dlPrevEl) {
+        dlPrevEl.textContent = dl.previousValue != null
+            ? `前值：${Number(dl.previousValue).toFixed(2)}x${dl.previousDate ? " (" + dl.previousDate + ")" : ""}`
+            : "前值：—";
+    }
+
+    const spreadEl = document.getElementById("lohas-pe-spread");
+    if (spreadEl) {
+        if (mm.value != null && dl.value != null) {
+            const diff = Math.round((Number(mm.value) - Number(dl.value)) * 100) / 100;
+            const avg = Math.round(((Number(mm.value) + Number(dl.value)) / 2) * 100) / 100;
+            const sign = diff > 0 ? "+" : "";
+            spreadEl.innerHTML = `均值 <strong>${avg.toFixed(2)}x</strong>｜差值 (M平方 − DL)：<strong>${sign}${diff.toFixed(2)}</strong>`;
+        } else {
+            spreadEl.textContent = "—";
+        }
+    }
+}
+
+function fmtYm(dateStr) {
+    if (!dateStr) return null;
+    const s = String(dateStr).trim();
+    return /^\d{4}-\d{2}-01$/.test(s) ? s.slice(0, 7) : s;
+}
+
+async function refreshLiveMarketIndicators() {
+    if (!STATIC || !WORKER_BASE_URL) return;
+    const next = JSON.parse(JSON.stringify(marketIndicators || {vix: {}, nasdaq100ForwardPe: {macromicro: {}, dollarliquidity: {}}}));
+    try {
+        const vixUrl = "https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?range=5d&interval=1d";
+        const j = await (await fetch(proxied(vixUrl))).json();
+        const meta = j.chart.result[0].meta;
+        if (meta && meta.regularMarketPrice != null) {
+            next.vix.value = Math.round(meta.regularMarketPrice * 100) / 100;
+            if (meta.chartPreviousClose != null || meta.previousClose != null) {
+                next.vix.previousValue = Math.round((meta.chartPreviousClose ?? meta.previousClose) * 100) / 100;
+            }
+            if (meta.regularMarketTime) {
+                next.vix.date = new Date(meta.regularMarketTime * 1000).toISOString().slice(0, 10);
+            }
+        }
+    } catch (e) {
+        console.warn("VIX 即時更新失敗，維持快照", e);
+    }
+    try {
+        const dlUrl = "https://dollarliquidity.com/en/valuation/nasdaq-100-forward-pe";
+        const html = await (await fetch(proxied(dlUrl))).text();
+        const hpIdx = html.indexOf("historyPoints");
+        if (hpIdx > 0) {
+            const snippet = html.slice(Math.max(0, hpIdx - 1200), hpIdx);
+            const rePair = /\\?"date\\?"\s*:\s*\\?"(\d{4}-\d{2}-\d{2})\\?"\s*,\s*\\?"pe\\?"\s*:\s*([\d.]+)/g;
+            const pairs = [...snippet.matchAll(rePair)];
+            if (pairs.length >= 2) {
+                const prevRow = pairs[pairs.length - 2];
+                next.nasdaq100ForwardPe.dollarliquidity.previousDate = prevRow[1];
+                next.nasdaq100ForwardPe.dollarliquidity.previousValue = Math.round(parseFloat(prevRow[2]) * 100) / 100;
+            }
+        }
+        const m = html.match(/Forward P\/E Ratio Today:\s*([\d.]+)\s*[×x]?\s*\((\d{4}-\d{2}-\d{2})\)/i);
+        if (m) {
+            const val = Math.round(parseFloat(m[1]) * 100) / 100;
+            next.nasdaq100ForwardPe.dollarliquidity.value = val;
+            next.nasdaq100ForwardPe.dollarliquidity.date = m[2];
+            const pv = next.nasdaq100ForwardPe.dollarliquidity.previousValue;
+            if (pv != null) {
+                next.nasdaq100ForwardPe.dollarliquidity.change = Math.round((val - pv) * 100) / 100;
+            }
+        }
+    } catch (e) {
+        console.warn("DollarLiquidity PE 即時更新失敗，維持快照", e);
+    }
+    try {
+        // 優先透過 Worker 呼叫 /charts/data/148300 取得最新完整序列（含 2026-10 19.96 與前值 21.55）
+        const mmDataUrl = "https://www.macromicro.me/charts/data/148300";
+        const mmJson = await (await fetch(proxied(mmDataUrl))).json();
+        const cObj = (mmJson.data && mmJson.data["c:148300"]) || {};
+        const series = (cObj.series && cObj.series[0]) || [];
+        const pts = series.filter(r => r && r.length >= 2 && !isNaN(parseFloat(r[1])));
+        if (pts.length) {
+            const latestRow = pts[pts.length - 1];
+            const prevRow = pts.length >= 2 ? pts[pts.length - 2] : null;
+            const val = Math.round(parseFloat(latestRow[1]) * 100) / 100;
+            const prevVal = prevRow ? Math.round(parseFloat(prevRow[1]) * 100) / 100 : null;
+            next.nasdaq100ForwardPe.macromicro.value = val;
+            next.nasdaq100ForwardPe.macromicro.date = fmtYm(latestRow[0]);
+            next.nasdaq100ForwardPe.macromicro.rawDate = String(latestRow[0]);
+            next.nasdaq100ForwardPe.macromicro.previousValue = prevVal;
+            next.nasdaq100ForwardPe.macromicro.previousDate = prevRow ? fmtYm(prevRow[0]) : null;
+            next.nasdaq100ForwardPe.macromicro.change = prevVal != null ? Math.round((val - prevVal) * 100) / 100 : null;
+        }
+    } catch (e) {
+        console.warn("MacroMicro PE 即時更新失敗，維持快照", e);
+    }
+    const mmVal = next.nasdaq100ForwardPe.macromicro.value;
+    const dlVal = next.nasdaq100ForwardPe.dollarliquidity.value;
+    if (mmVal != null && dlVal != null) {
+        next.nasdaq100ForwardPe.spread = Math.round((mmVal - dlVal) * 100) / 100;
+    }
+    marketIndicators = next;
+    renderMarketIndicators(marketIndicators);
 }
 
 function renderLohasSidebar(bundle, row) {
@@ -707,8 +1142,9 @@ function renderLohas(ticker) {
         return;
     }
     lohasSelected = ticker;
-    const data = bundle.chartData;
-    const latest = data[data.length - 1];
+    const fullData = bundle.chartData;
+    const latest = fullData[fullData.length - 1];
+    const data = sliceLohasByRange(fullData, currentLohasRange);
     const dates = data.map(r => r.date);
     const c = bundle.currencySymbol;
     const f = v => c + Number(v).toFixed(2);
@@ -717,6 +1153,10 @@ function renderLohas(ticker) {
     document.getElementById("lohas-close-value").textContent = f(latest.close);
     document.getElementById("lohas-tl-value").textContent = f(latest.tl);
     document.getElementById("lohas-chart-title").textContent = `📈 ${ticker} 樂活五線譜趨勢圖`;
+    const rangeStatus = document.getElementById("lohas-range-status");
+    if (rangeStatus && dates.length) {
+        rangeStatus.textContent = `顯示區間（${currentLohasRange}）：${dates[0]} ~ ${dates[dates.length - 1]}（共 ${dates.length} 個交易日）`;
+    }
     renderLohasSidebar(bundle, latest);
 
     const traces = [
@@ -731,16 +1171,26 @@ function renderLohas(ticker) {
         margin: {r: 10, l: 55, t: 10, b: 30}, height: 420,
         legend: {orientation: "h", y: -0.15, x: 0.5, xanchor: "center"},
         xaxis: {type: "date", gridcolor: "#f0f2f5", fixedrange: true},
-        yaxis: {gridcolor: "#f0f2f5", fixedrange: true},
+        yaxis: {gridcolor: "#f0f2f5", fixedrange: true, autorange: true},
         plot_bgcolor: "#fff", paper_bgcolor: "#fff", hovermode: "x unified",
     };
     const chart = document.getElementById("lohas-chart");
     Plotly.react(chart, traces, layout, {displayModeBar: false, responsive: true});
+    chart.removeAllListeners && chart.removeAllListeners("plotly_click");
     chart.on("plotly_click", ev => {
-        const row = lohasCache[lohasSelected].chartData[ev.points[0].pointIndex];
+        const sliced = sliceLohasByRange(lohasCache[lohasSelected].chartData, currentLohasRange);
+        const row = sliced[ev.points[0].pointIndex];
         if (row) renderLohasSidebar(lohasCache[lohasSelected], row);
     });
 }
+
+document.getElementById("lohas-range-buttons").addEventListener("click", e => {
+    if (e.target.tagName !== "BUTTON") return;
+    document.querySelectorAll("#lohas-range-buttons button").forEach(b => b.classList.remove("active"));
+    e.target.classList.add("active");
+    currentLohasRange = e.target.dataset.range;
+    if (lohasSelected && lohasCache[lohasSelected]) renderLohas(lohasSelected);
+});
 
 async function loadLohas() {
     if (lohasLoaded) return;
@@ -755,24 +1205,42 @@ async function loadLohas() {
         const bundle = STATIC.lohas || {};
         lohasCache = bundle.charts || {};
         fearGreed = bundle.fearGreed || {score: 50, rating: "資料暫缺"};
+        marketIndicators = bundle.marketIndicators || null;
+        renderMarketIndicators(marketIndicators);
         // CNN Fear & Greed 允許瀏覽器跨網域直接呼叫，不需代理即可即時更新
         try {
             const r = await fetch("https://production.dataviz.cnn.io/index/fearandgreed/graphdata");
             const j = await r.json();
             const fg = j.fear_and_greed || {};
             if (fg.score != null) {
-                fearGreed = {score: Math.round(fg.score * 10) / 10, rating: String(fg.rating || "").toUpperCase()};
+                fearGreed = {
+                    score: Math.round(fg.score * 10) / 10,
+                    rating: String(fg.rating || "").toUpperCase(),
+                    timestamp: fg.timestamp || fearGreed.timestamp,
+                    previousClose: fg.previous_close != null ? Math.round(fg.previous_close * 10) / 10 : fearGreed.previousClose,
+                    previous1Week: fg.previous_1_week != null ? Math.round(fg.previous_1_week * 10) / 10 : fearGreed.previous1Week,
+                    previous1Month: fg.previous_1_month != null ? Math.round(fg.previous_1_month * 10) / 10 : fearGreed.previous1Month,
+                    previous1Year: fg.previous_1_year != null ? Math.round(fg.previous_1_year * 10) / 10 : fearGreed.previous1Year,
+                };
             }
         } catch (e) {
             console.warn("Fear & Greed 即時更新失敗，使用快照值", e);
         }
+        refreshLiveMarketIndicators();
     } else {
         // 以目前持股（排除現金）作為可選商品，逐檔取五線譜
-        const pf = await (await fetch(API + "/api/portfolio")).json();
-        const tickers = (pf.positions || []).filter(p => !p.isCash).map(p => p.ticker);
+        const [pf, fg, mkt] = await Promise.all([
+            fetch(API + "/api/portfolio").then(r => r.json()),
+            fetch(API + "/api/feargreed").then(r => r.json()),
+            fetch(API + "/api/market-indicators").then(r => r.json()).catch(() => null),
+        ]);
+        // 去重（例如美股 QQQM 與台股複委託 QQQM 共用同一張五線譜）
+        const tickers = [...new Set((pf.positions || []).filter(p => !p.isCash).map(p => p.ticker))];
         select.innerHTML = tickers.map(t => `<option value="${t}">${t}</option>`).join("");
-        fearGreed = await (await fetch(API + "/api/feargreed")).json();
+        fearGreed = fg;
+        marketIndicators = mkt;
         renderGauge(fearGreed);
+        renderMarketIndicators(marketIndicators);
         // 逐檔載入（點選時才抓，避免一次等太久）
         select.onchange = async e => {
             const t = e.target.value;

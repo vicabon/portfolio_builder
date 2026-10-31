@@ -346,7 +346,8 @@ def _empty_history():
 
 # ------------------------------------------------------------ 樂活五線譜
 
-_LOHAS_WINDOW = 875  # 約 3.5 年交易日
+_LOHAS_WINDOW = 875  # 約 3.5 年交易日（回歸與標準差計算窗口）
+_LOHAS_DISPLAY_WINDOW = 1260  # 約 5 年交易日（供前端 5Y 瀏覽）
 
 
 def get_lohas(ticker, start="2019-01-01"):
@@ -368,14 +369,20 @@ def get_lohas(ticker, start="2019-01-01"):
     if not hist:
         return {"error": f"找不到 {ticker} 的歷史數據", "chartData": []}
 
-    items = sorted(hist.items())[-_LOHAS_WINDOW:]
+    items = sorted(hist.items())[-_LOHAS_DISPLAY_WINDOW:]
     dates = [d for d, _ in items]
     closes = np.array([c for _, c in items], dtype=float)
 
-    x = np.arange(len(closes))
-    slope, intercept = np.polyfit(x, closes, 1)
-    tl = slope * x + intercept
-    sd = float(np.std(closes - tl))
+    # 以最近 _LOHAS_WINDOW（約 3.5 年）進行線性回歸與標準差計算，並將軌道延伸涵蓋整個顯示區間（5Y）
+    reg_closes = closes[-_LOHAS_WINDOW:]
+    reg_x = np.arange(len(reg_closes))
+    slope, intercept = np.polyfit(reg_x, reg_closes, 1)
+    reg_tl = slope * reg_x + intercept
+    sd = float(np.std(reg_closes - reg_tl))
+
+    offset = len(closes) - len(reg_closes)
+    full_x = np.arange(len(closes)) - offset
+    tl = slope * full_x + intercept
 
     chart_data = []
     for i, date_str in enumerate(dates):
@@ -406,7 +413,7 @@ def get_lohas(ticker, start="2019-01-01"):
 
 
 def get_fear_greed():
-    """CNN Fear & Greed 即時分數（透過 requests，避免額外套件）。"""
+    """CNN Fear & Greed 即時分數與歷史比較（透過 requests，避免額外套件）。"""
     try:
         resp = requests.get(
             "https://production.dataviz.cnn.io/index/fearandgreed/graphdata",
@@ -417,19 +424,241 @@ def get_fear_greed():
         fg = resp.json().get("fear_and_greed") or {}
         score = float(fg.get("score"))
         rating = str(fg.get("rating") or "").upper()
-        return {"score": round(score, 1), "rating": rating}
+        prev_close = _to_float(fg.get("previous_close"))
+        prev_week = _to_float(fg.get("previous_1_week"))
+        prev_month = _to_float(fg.get("previous_1_month"))
+        prev_year = _to_float(fg.get("previous_1_year"))
+        return {
+            "score": round(score, 1),
+            "rating": rating,
+            "timestamp": fg.get("timestamp"),
+            "previousClose": round(prev_close, 1) if prev_close is not None else None,
+            "previous1Week": round(prev_week, 1) if prev_week is not None else None,
+            "previous1Month": round(prev_month, 1) if prev_month is not None else None,
+            "previous1Year": round(prev_year, 1) if prev_year is not None else None,
+        }
     except Exception as error:
         print(f"[fg] CNN Fear & Greed 取得失敗：{error}")
         return {"score": 50.0, "rating": "資料暫缺"}
 
 
 def gauge_color(score):
-    if score <= 25:
+    if score < 25:
         return "#cc0000"
-    if score <= 45:
+    if score < 45:
         return "#ff9900"
-    if score <= 55:
+    if score < 55:
         return "#888888"
-    if score <= 75:
+    if score < 75:
         return "#66cc00"
     return "#008800"
+
+
+# ------------------------------------------------------------ 市場指標 (VIX & Nasdaq100 Forward PE)
+
+_MACROMICRO_URL = "https://www.macromicro.me/charts/148300/NASDAQ-100-Index-Forward-PE-Ratio"
+_MACROMICRO_DATA_URL = "https://www.macromicro.me/charts/data/148300"
+_DOLLARLIQUIDITY_URL = "https://dollarliquidity.com/en/valuation/nasdaq-100-forward-pe"
+
+
+def get_vix():
+    """取得 CBOE VIX 波動率指數最新報價與日期。"""
+    result = _yahoo_chart("%5EVIX", rng="5d")
+    if not result:
+        return {"value": None, "date": None}
+    meta = result.get("meta") or {}
+    price = _to_float(meta.get("regularMarketPrice"))
+    if price is None:
+        closes = (((result.get("indicators") or {}).get("quote") or [{}])[0]).get("close") or []
+        closes = [c for c in closes if c is not None]
+        price = _to_float(closes[-1]) if closes else None
+    prev = _to_float(meta.get("chartPreviousClose") or meta.get("previousClose"))
+    ts = meta.get("regularMarketTime")
+    date_str = time.strftime("%Y-%m-%d", time.gmtime(ts)) if ts else None
+    return {
+        "value": round(price, 2) if price is not None else None,
+        "previousValue": round(prev, 2) if prev is not None else None,
+        "date": date_str,
+    }
+
+
+def _fmt_ym(date_str):
+    """把 MacroMicro 月頻日期 '2026-10-01' 格式化為 '2026-10'。"""
+    if not date_str:
+        return None
+    s = str(date_str).strip()
+    if re.match(r"^\d{4}-\d{2}-01$", s):
+        return s[:7]
+    return s
+
+
+def get_nasdaq100_forward_pe_macromicro():
+    """從財經M平方 (MacroMicro) 取得 NASDAQ 100 Index - Forward PE Ratio 最新數據與前值。
+
+    流程：
+    1. 先透過 Session 取得圖表頁 HTML 與頁面內嵌的 `data-stk` token。
+    2. 帶上 Session Cookie 與 `Authorization: Bearer <stk>` 呼叫 `/charts/data/148300`，
+       取得完整時間序列 `data['c:148300']['series'][0]`（即 NASDAQ 100 Index - Forward PE Ratio），
+       解析最新一期（如 2026-10: 19.96）與前值（如 2026-09: 21.55）。
+    3. 若 API 被阻擋，退回解析 HTML 內嵌的 `series_last_rows`。
+    """
+    import json
+
+    try:
+        sess = requests.Session()
+        resp_page = sess.get(_MACROMICRO_URL, headers=_HEADERS, timeout=10)
+        resp_page.raise_for_status()
+        stk_match = re.search(r'data-stk="([a-f0-9]+)"', resp_page.text)
+        if stk_match:
+            stk = stk_match.group(1)
+            resp_data = sess.get(
+                _MACROMICRO_DATA_URL,
+                headers={
+                    **_HEADERS,
+                    "Authorization": f"Bearer {stk}",
+                    "Referer": _MACROMICRO_URL,
+                    "Accept": "application/json",
+                },
+                timeout=10,
+            )
+            if resp_data.status_code == 200:
+                payload = resp_data.json()
+                c_obj = (payload.get("data") or {}).get("c:148300") or {}
+                series = c_obj.get("series") or []
+                if series and series[0]:
+                    pts = [row for row in series[0] if len(row) >= 2 and _to_float(row[1]) is not None]
+                    if pts:
+                        latest_row = pts[-1]
+                        prev_row = pts[-2] if len(pts) >= 2 else None
+                        val = round(float(latest_row[1]), 2)
+                        prev_val = round(float(prev_row[1]), 2) if prev_row else None
+                        return {
+                            "value": val,
+                            "date": _fmt_ym(latest_row[0]),
+                            "rawDate": str(latest_row[0]),
+                            "previousValue": prev_val,
+                            "previousDate": _fmt_ym(prev_row[0]) if prev_row else None,
+                            "change": round(val - prev_val, 2) if prev_val is not None else None,
+                            "url": _MACROMICRO_URL,
+                            "source": "MacroMicro 財經M平方",
+                        }
+
+        # 備援：HTML 內嵌的 series_last_rows
+        match = re.search(r'"series_last_rows":(".*?"),"', resp_page.text)
+        if match:
+            raw_str = json.loads(match.group(1))
+            series_list = json.loads(raw_str)
+            if series_list and series_list[0]:
+                pts = [row for row in series_list[0] if len(row) >= 2 and _to_float(row[1]) is not None]
+                if pts:
+                    latest_row = pts[-1]
+                    prev_row = pts[-2] if len(pts) >= 2 else None
+                    val = round(float(latest_row[1]), 2)
+                    prev_val = round(float(prev_row[1]), 2) if prev_row else None
+                    return {
+                        "value": val,
+                        "date": _fmt_ym(latest_row[0]),
+                        "rawDate": str(latest_row[0]),
+                        "previousValue": prev_val,
+                        "previousDate": _fmt_ym(prev_row[0]) if prev_row else None,
+                        "change": round(val - prev_val, 2) if prev_val is not None else None,
+                        "url": _MACROMICRO_URL,
+                        "source": "MacroMicro 財經M平方",
+                    }
+    except Exception as error:
+        print(f"[pe] MacroMicro Nasdaq100 Forward PE 取得失敗：{error}")
+    return {
+        "value": None,
+        "date": None,
+        "previousValue": None,
+        "previousDate": None,
+        "change": None,
+        "url": _MACROMICRO_URL,
+        "source": "MacroMicro 財經M平方",
+    }
+
+
+def get_nasdaq100_forward_pe_dollarliquidity():
+    """從 DollarLiquidity.com 取得 Nasdaq-100 Forward P/E Ratio 最新統計數值與前值。"""
+    try:
+        resp = requests.get(_DOLLARLIQUIDITY_URL, headers=_HEADERS, timeout=10)
+        resp.raise_for_status()
+        text = resp.text
+
+        # 解析序列中的最後兩筆（取得最新值與前值）
+        # 格式：...{\"date\":\"2026-10-29\",\"pe\":20.17,...},{\"date\":\"2026-10-30\",\"pe\":19.48,...}],\"historyPoints\"
+        prev_val = None
+        prev_date = None
+        hp_idx = text.find("historyPoints")
+        if hp_idx > 0:
+            snippet = text[max(0, hp_idx - 1200):hp_idx]
+            pairs = re.findall(
+                r'\\?"date\\?"\s*:\s*\\?"(\d{4}-\d{2}-\d{2})\\?"\s*,\s*\\?"pe\\?"\s*:\s*([\d.]+)',
+                snippet,
+            )
+            if len(pairs) >= 2:
+                prev_date, prev_pe_str = pairs[-2]
+                prev_val = round(float(prev_pe_str), 2)
+
+        # 優先匹配 <title>Nasdaq-100 Forward P/E Ratio Today: 19.48× (2026-10-30)</title>
+        match = re.search(
+            r"Forward P/E Ratio Today:\s*([\d.]+)\s*[×x]?\s*\((\d{4}-\d{2}-\d{2})\)",
+            text,
+            re.I,
+        )
+        if match:
+            val = round(float(match.group(1)), 2)
+            return {
+                "value": val,
+                "date": match.group(2),
+                "previousValue": prev_val,
+                "previousDate": prev_date,
+                "change": round(val - prev_val, 2) if prev_val is not None else None,
+                "url": _DOLLARLIQUIDITY_URL,
+                "source": "DollarLiquidity",
+            }
+        # 備援匹配 JSON-LD PropertyValue
+        match_val = re.search(
+            r'"name"\s*:\s*"Forward P/E"\s*,\s*"unitText"\s*:\s*"ratio"\s*,\s*"value"\s*:\s*([\d.]+)',
+            text,
+        )
+        if match_val:
+            val = round(float(match_val.group(1)), 2)
+            date_match = re.search(r'"latestDate"\s*:\s*"(\d{4}-\d{2}-\d{2})"', text)
+            return {
+                "value": val,
+                "date": date_match.group(1) if date_match else None,
+                "previousValue": prev_val,
+                "previousDate": prev_date,
+                "change": round(val - prev_val, 2) if prev_val is not None else None,
+                "url": _DOLLARLIQUIDITY_URL,
+                "source": "DollarLiquidity",
+            }
+    except Exception as error:
+        print(f"[pe] DollarLiquidity Nasdaq100 Forward PE 取得失敗：{error}")
+    return {
+        "value": None,
+        "date": None,
+        "previousValue": None,
+        "previousDate": None,
+        "change": None,
+        "url": _DOLLARLIQUIDITY_URL,
+        "source": "DollarLiquidity",
+    }
+
+
+def get_market_indicators():
+    """整合 VIX 與兩個來源的 Nasdaq 100 Forward P/E Ratio（含雙方最新值、前值與差異比對）。"""
+    mm = get_nasdaq100_forward_pe_macromicro()
+    dl = get_nasdaq100_forward_pe_dollarliquidity()
+    diff = None
+    if mm.get("value") is not None and dl.get("value") is not None:
+        diff = round(mm["value"] - dl["value"], 2)
+    return {
+        "vix": get_vix(),
+        "nasdaq100ForwardPe": {
+            "macromicro": mm,
+            "dollarliquidity": dl,
+            "spread": diff,
+        },
+    }
