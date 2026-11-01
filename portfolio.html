@@ -980,8 +980,7 @@ function fmtPeDelta(change) {
     if (change == null || isNaN(change)) return "";
     const n = Number(change);
     const sign = n > 0 ? "+" : "";
-    const color = n > 0 ? "#d92d20" : (n < 0 ? "#059669" : "#6b7686");
-    return `<span style="color:${color};font-weight:700;margin-left:4px;font-size:13px;">(${sign}${n.toFixed(2)})</span>`;
+    return `<span style="color:inherit;font-weight:700;margin-left:4px;font-size:13px;">(${sign}${n.toFixed(2)})</span>`;
 }
 
 // VIX 市場情緒分級判斷

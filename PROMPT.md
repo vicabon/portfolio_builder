@@ -105,3 +105,15 @@ MacroMicro 財經M平方的Nasdaq 100 Forward P/E Ratio數據與"雙站統計比
 ```text
 將所有需要用到的檔案git add並git commit 最後git push
 ```
+
+
+## 2026-11-01 22:47:39+08:00
+```text
+"Nasdaq 100 Forward P/E"數值後面括號與括號內增減數值請與數值相同顏色
+```
+
+
+## 2026-11-01 22:48:37+08:00
+```text
+將所有需要用到的檔案git add並git commit 最後git push
+```
