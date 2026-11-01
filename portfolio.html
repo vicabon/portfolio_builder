@@ -234,17 +234,18 @@
                 <div class="metric">
                     <div id="lohas-close-title" class="metric-title"></div>
                     <div id="lohas-close-value" class="metric-value"></div>
+                    <div id="lohas-close-badge"></div>
                 </div>
                 <div class="metric">
                     <div class="metric-title">五線譜中軸 (TL)</div>
-                    <div id="lohas-tl-value" class="metric-value" style="color:#008800;"></div>
+                    <div id="lohas-tl-value" class="metric-value" style="color:#888888;"></div>
                 </div>
                 <div class="metric">
                     <div class="metric-title">CNN 即時情緒狀態</div>
                     <div id="lohas-fg-rating" class="metric-value"></div>
                 </div>
                 <div class="metric">
-                    <div class="metric-title">CBOE VIX 恐慌指數</div>
+                    <div class="metric-title">CBOE VIX 恐慌指數 <a class="pe-src-link" href="https://finance.yahoo.com/quote/%5EVIX/" target="_blank" rel="noopener noreferrer">(Yahoo ↗)</a> <a class="pe-src-link" href="https://www.cboe.com/tradable-products/vix/" target="_blank" rel="noopener noreferrer">(CBOE ↗)</a></div>
                     <div id="lohas-vix-value" class="metric-value">—</div>
                     <div id="lohas-vix-badge"></div>
                     <div id="lohas-vix-date" class="metric-sub"></div>
@@ -301,28 +302,28 @@
                         <span class="g-cur" id="pe-guide-cur"></span>
                     </div>
                     <ul class="guide-list" id="pe-guide-list">
-                        <li class="guide-item" data-pe-tier="very-cheap" style="border-left-color:#059669;">
-                            <span class="g-tag" style="color:#059669;">非常便宜</span>
+                        <li class="guide-item" data-pe-tier="very-cheap" style="border-left-color:#dc2626;">
+                            <span class="g-tag" style="color:#dc2626;">非常便宜</span>
                             <span class="g-desc">低於 18 倍</span>
                         </li>
-                        <li class="guide-item" data-pe-tier="cheap" style="border-left-color:#16a34a;">
-                            <span class="g-tag" style="color:#16a34a;">便宜</span>
+                        <li class="guide-item" data-pe-tier="cheap" style="border-left-color:#d97706;">
+                            <span class="g-tag" style="color:#d97706;">便宜</span>
                             <span class="g-desc">18～20 倍</span>
                         </li>
-                        <li class="guide-item" data-pe-tier="fair-cheap" style="border-left-color:#2563eb;">
-                            <span class="g-tag" style="color:#2563eb;">合理偏便宜</span>
+                        <li class="guide-item" data-pe-tier="fair-cheap" style="border-left-color:#64748b;">
+                            <span class="g-tag" style="color:#475569;">合理偏便宜</span>
                             <span class="g-desc">20～23 倍</span>
                         </li>
-                        <li class="guide-item" data-pe-tier="fair" style="border-left-color:#64748b;">
-                            <span class="g-tag" style="color:#475569;">一般／合理</span>
+                        <li class="guide-item" data-pe-tier="fair" style="border-left-color:#2563eb;">
+                            <span class="g-tag" style="color:#2563eb;">一般／合理</span>
                             <span class="g-desc">23～27 倍</span>
                         </li>
-                        <li class="guide-item" data-pe-tier="expensive" style="border-left-color:#d97706;">
-                            <span class="g-tag" style="color:#d97706;">偏貴</span>
+                        <li class="guide-item" data-pe-tier="expensive" style="border-left-color:#16a34a;">
+                            <span class="g-tag" style="color:#16a34a;">偏貴</span>
                             <span class="g-desc">27～30 倍以上</span>
                         </li>
-                        <li class="guide-item" data-pe-tier="very-expensive" style="border-left-color:#dc2626;">
-                            <span class="g-tag" style="color:#dc2626;">非常昂貴</span>
+                        <li class="guide-item" data-pe-tier="very-expensive" style="border-left-color:#059669;">
+                            <span class="g-tag" style="color:#059669;">非常昂貴</span>
                             <span class="g-desc">30～35 倍以上</span>
                         </li>
                     </ul>
@@ -995,16 +996,56 @@ function getVixTierInfo(v) {
     return {key: "crisis", label: "重大危機等級", range: "高於 50", color: "#7f1d1d", bg: "#fef2f2"};
 }
 
-// Nasdaq 100 Forward P/E 價值區間判斷
+// Nasdaq 100 Forward P/E 價值區間判斷（顏色對調：便宜對應恐懼紅/橘，昂貴對應貪婪綠）
 function getPeTierInfo(v) {
     if (v == null || isNaN(v)) return null;
     const n = Number(v);
-    if (n < 18) return {key: "very-cheap", label: "非常便宜", range: "低於 18 倍", color: "#059669", bg: "#ecfdf5"};
-    if (n < 20) return {key: "cheap", label: "便宜", range: "18～20 倍", color: "#16a34a", bg: "#f0fdf4"};
-    if (n < 23) return {key: "fair-cheap", label: "合理偏便宜", range: "20～23 倍", color: "#2563eb", bg: "#eff6ff"};
-    if (n < 27) return {key: "fair", label: "一般／合理", range: "23～27 倍", color: "#475569", bg: "#f1f5f9"};
-    if (n < 30) return {key: "expensive", label: "偏貴", range: "27～30 倍以上", color: "#d97706", bg: "#fffbeb"};
-    return {key: "very-expensive", label: "非常昂貴", range: "30～35 倍以上", color: "#dc2626", bg: "#fef2f2"};
+    if (n < 18) return {key: "very-cheap", label: "非常便宜", range: "低於 18 倍", color: "#dc2626", bg: "#fef2f2"};
+    if (n < 20) return {key: "cheap", label: "便宜", range: "18～20 倍", color: "#d97706", bg: "#fffbeb"};
+    if (n < 23) return {key: "fair-cheap", label: "合理偏便宜", range: "20～23 倍", color: "#475569", bg: "#f1f5f9"};
+    if (n < 27) return {key: "fair", label: "一般／合理", range: "23～27 倍", color: "#2563eb", bg: "#eff6ff"};
+    if (n < 30) return {key: "expensive", label: "偏貴", range: "27～30 倍以上", color: "#16a34a", bg: "#f0fdf4"};
+    return {key: "very-expensive", label: "非常昂貴", range: "30～35 倍以上", color: "#059669", bg: "#ecfdf5"};
+}
+
+// 樂活五線譜五條通道顏色（對應 CNN Fear & Greed 即時量表五色：極悲觀→極度恐懼 #cc0000 ... 極樂觀→極度貪婪 #008800）
+const LOHAS_BAND_COLORS = {
+    p2sd: "#008800", // 極樂觀 (+2SD) <-> 極度貪婪 (Extreme Greed)
+    p1sd: "#66cc00", // 相對樂觀 (+1SD) <-> 貪婪 (Greed)
+    tl:   "#888888", // 趨勢中軸 (TL) <-> 中性 (Neutral)
+    m1sd: "#ff9900", // 相對悲觀 (-1SD) <-> 恐懼 (Fear)
+    m2sd: "#cc0000", // 極悲觀 (-2SD) <-> 極度恐懼 (Extreme Fear)
+};
+
+// 根據最新股價落入五線譜的哪個區段，回傳對應的五線譜虛線顏色與區間標籤
+function getLohasPriceZone(row) {
+    if (!row || row.close == null) {
+        return {color: "var(--ink)", bg: "#f1f5f9", label: ""};
+    }
+    const c = Number(row.close);
+    // 以五條軌道之間的中點作為最接近軌道（五區段）分界，或直接依五段軌道顏色呈現：
+    // >= +1.5SD -> 極樂觀 (#008800)
+    // +0.5SD ~ +1.5SD -> 相對樂觀 (#66cc00)
+    // -0.5SD ~ +0.5SD -> 趨勢中軸 (#888888)
+    // -1.5SD ~ -0.5SD -> 相對悲觀 (#ff9900)
+    // < -1.5SD -> 極悲觀 (#cc0000)
+    const p15 = (row.p2sd + row.p1sd) / 2;
+    const p05 = (row.p1sd + row.tl) / 2;
+    const m05 = (row.tl + row.m1sd) / 2;
+    const m15 = (row.m1sd + row.m2sd) / 2;
+    if (c >= p15) {
+        return {color: LOHAS_BAND_COLORS.p2sd, bg: "#e3f7e8", label: "極樂觀區 (+2SD)"};
+    }
+    if (c >= p05) {
+        return {color: LOHAS_BAND_COLORS.p1sd, bg: "#eefbe6", label: "相對樂觀區 (+1SD)"};
+    }
+    if (c >= m05) {
+        return {color: LOHAS_BAND_COLORS.tl, bg: "#f1f3f5", label: "趨勢中軸區 (TL)"};
+    }
+    if (c >= m15) {
+        return {color: LOHAS_BAND_COLORS.m1sd, bg: "#fff4e5", label: "相對悲觀區 (-1SD)"};
+    }
+    return {color: LOHAS_BAND_COLORS.m2sd, bg: "#fde8e8", label: "極悲觀區 (-2SD)"};
 }
 
 function renderMarketIndicators(ind) {
@@ -1089,15 +1130,18 @@ async function refreshLiveMarketIndicators() {
     const next = JSON.parse(JSON.stringify(marketIndicators || {vix: {}, nasdaq100ForwardPe: {dollarliquidity: {}}}));
     try {
         const vixUrl = "https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?range=5d&interval=1d";
-        const j = await (await fetch(proxied(vixUrl))).json();
-        const meta = j.chart.result[0].meta;
-        if (meta && meta.regularMarketPrice != null) {
-            next.vix.value = Math.round(meta.regularMarketPrice * 100) / 100;
-            if (meta.chartPreviousClose != null || meta.previousClose != null) {
-                next.vix.previousValue = Math.round((meta.chartPreviousClose ?? meta.previousClose) * 100) / 100;
-            }
-            if (meta.regularMarketTime) {
-                next.vix.date = new Date(meta.regularMarketTime * 1000).toISOString().slice(0, 10);
+        const rVix = await fetch(proxied(vixUrl));
+        if (rVix.ok) {
+            const j = await rVix.json();
+            const meta = j.chart.result[0].meta;
+            if (meta && meta.regularMarketPrice != null) {
+                next.vix.value = Math.round(meta.regularMarketPrice * 100) / 100;
+                if (meta.chartPreviousClose != null || meta.previousClose != null) {
+                    next.vix.previousValue = Math.round((meta.chartPreviousClose ?? meta.previousClose) * 100) / 100;
+                }
+                if (meta.regularMarketTime) {
+                    next.vix.date = new Date(meta.regularMarketTime * 1000).toISOString().slice(0, 10);
+                }
             }
         }
     } catch (e) {
@@ -1105,26 +1149,35 @@ async function refreshLiveMarketIndicators() {
     }
     try {
         const dlUrl = "https://dollarliquidity.com/en/valuation/nasdaq-100-forward-pe";
-        const html = await (await fetch(proxied(dlUrl))).text();
-        const hpIdx = html.indexOf("historyPoints");
-        if (hpIdx > 0) {
-            const snippet = html.slice(Math.max(0, hpIdx - 1200), hpIdx);
-            const rePair = /\\?"date\\?"\s*:\s*\\?"(\d{4}-\d{2}-\d{2})\\?"\s*,\s*\\?"pe\\?"\s*:\s*([\d.]+)/g;
-            const pairs = [...snippet.matchAll(rePair)];
-            if (pairs.length >= 2) {
-                const prevRow = pairs[pairs.length - 2];
-                next.nasdaq100ForwardPe.dollarliquidity.previousDate = prevRow[1];
-                next.nasdaq100ForwardPe.dollarliquidity.previousValue = Math.round(parseFloat(prevRow[2]) * 100) / 100;
+        const rDl = await fetch(proxied(dlUrl));
+        if (!rDl.ok) {
+            console.warn(`DollarLiquidity PE 即時更新 HTTP ${rDl.status}（請確認 cloudflare-worker.js 已更新部署至 Cloudflare Workers 白名單）`);
+        } else {
+            const html = await rDl.text();
+            const hpIdx = html.indexOf("historyPoints");
+            if (hpIdx > 0) {
+                const snippet = html.slice(Math.max(0, hpIdx - 1200), hpIdx);
+                const rePair = /\\?"date\\?"\s*:\s*\\?"(\d{4}-\d{2}-\d{2})\\?"\s*,\s*\\?"pe\\?"\s*:\s*([\d.]+)/g;
+                const pairs = [...snippet.matchAll(rePair)];
+                if (pairs.length >= 2) {
+                    const lastRow = pairs[pairs.length - 1];
+                    const prevRow = pairs[pairs.length - 2];
+                    next.nasdaq100ForwardPe.dollarliquidity.date = lastRow[1];
+                    next.nasdaq100ForwardPe.dollarliquidity.value = Math.round(parseFloat(lastRow[2]) * 100) / 100;
+                    next.nasdaq100ForwardPe.dollarliquidity.previousDate = prevRow[1];
+                    next.nasdaq100ForwardPe.dollarliquidity.previousValue = Math.round(parseFloat(prevRow[2]) * 100) / 100;
+                }
             }
-        }
-        const m = html.match(/Forward P\/E Ratio Today:\s*([\d.]+)\s*[×x]?\s*\((\d{4}-\d{2}-\d{2})\)/i);
-        if (m) {
-            const val = Math.round(parseFloat(m[1]) * 100) / 100;
-            next.nasdaq100ForwardPe.dollarliquidity.value = val;
-            next.nasdaq100ForwardPe.dollarliquidity.date = m[2];
+            const m = html.match(/Forward P\/E Ratio Today:\s*([\d.]+)\s*[×x]?\s*\((\d{4}-\d{2}-\d{2})\)/i);
+            if (m) {
+                const val = Math.round(parseFloat(m[1]) * 100) / 100;
+                next.nasdaq100ForwardPe.dollarliquidity.value = val;
+                next.nasdaq100ForwardPe.dollarliquidity.date = m[2];
+            }
+            const curVal = next.nasdaq100ForwardPe.dollarliquidity.value;
             const pv = next.nasdaq100ForwardPe.dollarliquidity.previousValue;
-            if (pv != null) {
-                next.nasdaq100ForwardPe.dollarliquidity.change = Math.round((val - pv) * 100) / 100;
+            if (curVal != null && pv != null) {
+                next.nasdaq100ForwardPe.dollarliquidity.change = Math.round((curVal - pv) * 100) / 100;
             }
         }
     } catch (e) {
@@ -1137,18 +1190,19 @@ async function refreshLiveMarketIndicators() {
 function renderLohasSidebar(bundle, row) {
     const c = bundle.currencySymbol;
     const f = v => c + Number(v).toFixed(2);
+    const z = getLohasPriceZone(row);
     document.getElementById("lohas-sidebar").innerHTML = `
         <h3 class="sidebar-title">📈 歷史數據細節（📅 ${row.date}）</h3>
         <div class="price-box">
             <span>💰 ${bundle.ticker} 當日股價</span>
-            <span>${f(row.close)}</span>
+            <span style="color:${z.color};">${f(row.close)}</span>
         </div>
         <ul class="grid-list">
-            <li style="border-left-color:#dc3545;"><span class="line-name">🔴 極樂觀線 (+2SD)</span><span class="line-val">${f(row.p2sd)}</span></li>
-            <li style="border-left-color:#ffc107;"><span class="line-name">🟠 相對樂觀 (+1SD)</span><span class="line-val">${f(row.p1sd)}</span></li>
-            <li style="border-left-color:#28a745;"><span class="line-name">🔵 趨勢中軸 (TL)</span><span class="line-val">${f(row.tl)}</span></li>
-            <li style="border-left-color:#007bff;"><span class="line-name">🟢 相對悲觀 (-1SD)</span><span class="line-val">${f(row.m1sd)}</span></li>
-            <li style="border-left-color:#6f42c1;"><span class="line-name">🟣 極悲觀線 (-2SD)</span><span class="line-val">${f(row.m2sd)}</span></li>
+            <li style="border-left-color:${LOHAS_BAND_COLORS.p2sd};"><span class="line-name" style="color:${LOHAS_BAND_COLORS.p2sd};font-weight:700;">極樂觀線 (+2SD)</span><span class="line-val" style="color:${LOHAS_BAND_COLORS.p2sd};">${f(row.p2sd)}</span></li>
+            <li style="border-left-color:${LOHAS_BAND_COLORS.p1sd};"><span class="line-name" style="color:${LOHAS_BAND_COLORS.p1sd};font-weight:700;">相對樂觀 (+1SD)</span><span class="line-val" style="color:${LOHAS_BAND_COLORS.p1sd};">${f(row.p1sd)}</span></li>
+            <li style="border-left-color:${LOHAS_BAND_COLORS.tl};"><span class="line-name" style="color:${LOHAS_BAND_COLORS.tl};font-weight:700;">趨勢中軸 (TL)</span><span class="line-val" style="color:${LOHAS_BAND_COLORS.tl};">${f(row.tl)}</span></li>
+            <li style="border-left-color:${LOHAS_BAND_COLORS.m1sd};"><span class="line-name" style="color:${LOHAS_BAND_COLORS.m1sd};font-weight:700;">相對悲觀 (-1SD)</span><span class="line-val" style="color:${LOHAS_BAND_COLORS.m1sd};">${f(row.m1sd)}</span></li>
+            <li style="border-left-color:${LOHAS_BAND_COLORS.m2sd};"><span class="line-name" style="color:${LOHAS_BAND_COLORS.m2sd};font-weight:700;">極悲觀線 (-2SD)</span><span class="line-val" style="color:${LOHAS_BAND_COLORS.m2sd};">${f(row.m2sd)}</span></li>
         </ul>`;
 }
 
@@ -1167,10 +1221,21 @@ function renderLohas(ticker) {
     const dates = data.map(r => r.date);
     const c = bundle.currencySymbol;
     const f = v => c + Number(v).toFixed(2);
+    const latestZone = getLohasPriceZone(latest);
 
     document.getElementById("lohas-close-title").textContent = `${ticker} 最新股價`;
-    document.getElementById("lohas-close-value").textContent = f(latest.close);
-    document.getElementById("lohas-tl-value").textContent = f(latest.tl);
+    const closeValEl = document.getElementById("lohas-close-value");
+    closeValEl.textContent = f(latest.close);
+    closeValEl.style.color = latestZone.color;
+    const closeBadgeEl = document.getElementById("lohas-close-badge");
+    if (closeBadgeEl) {
+        closeBadgeEl.innerHTML = latestZone.label
+            ? `<span class="metric-badge" style="background:${latestZone.bg};color:${latestZone.color};border:1px solid ${latestZone.color};">${latestZone.label}</span>`
+            : "";
+    }
+    const tlValEl = document.getElementById("lohas-tl-value");
+    tlValEl.textContent = f(latest.tl);
+    tlValEl.style.color = LOHAS_BAND_COLORS.tl;
     document.getElementById("lohas-chart-title").textContent = `📈 ${ticker} 樂活五線譜趨勢圖`;
     const rangeStatus = document.getElementById("lohas-range-status");
     if (rangeStatus && dates.length) {
@@ -1180,11 +1245,11 @@ function renderLohas(ticker) {
 
     const traces = [
         {x: dates, y: data.map(r => r.close), name: `${ticker} 收盤價`, type: "scatter", mode: "lines", line: {color: "#000", width: 2}},
-        {x: dates, y: data.map(r => r.p2sd), name: "極樂觀 (+2SD)", type: "scatter", line: {color: "#dc3545", width: 1.5, dash: "dash"}},
-        {x: dates, y: data.map(r => r.p1sd), name: "相對樂觀 (+1SD)", type: "scatter", line: {color: "#ffc107", width: 1.5, dash: "dash"}},
-        {x: dates, y: data.map(r => r.tl), name: "趨勢中軸 (TL)", type: "scatter", line: {color: "#28a745", width: 2}},
-        {x: dates, y: data.map(r => r.m1sd), name: "相對悲觀 (-1SD)", type: "scatter", line: {color: "#007bff", width: 1.5, dash: "dash"}},
-        {x: dates, y: data.map(r => r.m2sd), name: "極悲觀 (-2SD)", type: "scatter", line: {color: "#6f42c1", width: 1.5, dash: "dash"}},
+        {x: dates, y: data.map(r => r.p2sd), name: "極樂觀 (+2SD)", type: "scatter", line: {color: LOHAS_BAND_COLORS.p2sd, width: 1.5, dash: "dash"}},
+        {x: dates, y: data.map(r => r.p1sd), name: "相對樂觀 (+1SD)", type: "scatter", line: {color: LOHAS_BAND_COLORS.p1sd, width: 1.5, dash: "dash"}},
+        {x: dates, y: data.map(r => r.tl), name: "趨勢中軸 (TL)", type: "scatter", line: {color: LOHAS_BAND_COLORS.tl, width: 2, dash: "dash"}},
+        {x: dates, y: data.map(r => r.m1sd), name: "相對悲觀 (-1SD)", type: "scatter", line: {color: LOHAS_BAND_COLORS.m1sd, width: 1.5, dash: "dash"}},
+        {x: dates, y: data.map(r => r.m2sd), name: "極悲觀 (-2SD)", type: "scatter", line: {color: LOHAS_BAND_COLORS.m2sd, width: 1.5, dash: "dash"}},
     ];
     const layout = {
         margin: {r: 10, l: 55, t: 10, b: 30}, height: 420,
@@ -1245,7 +1310,7 @@ async function loadLohas() {
         } catch (e) {
             console.warn("Fear & Greed 即時更新失敗，使用快照值", e);
         }
-        refreshLiveMarketIndicators();
+        await refreshLiveMarketIndicators();
     } else {
         // 以目前持股（排除現金）作為可選商品，逐檔取五線譜
         const [pf, fg, mkt] = await Promise.all([

@@ -83,3 +83,25 @@ MacroMicro 財經M平方的Nasdaq 100 Forward P/E Ratio數據與"雙站統計比
 ```text
 將所有需要用到的檔案git add並git commit 最後git push
 ```
+
+## 2026-11-01 22:29:09+08:00
+```text
+按下"更新報價與數據"後 "樂活五線譜"頁面下
+"Nasdaq 100 Forward P/E"未根據爬文"https://dollarliquidity.com/en/valuation/nasdaq-100-forward-pe"網站的數據做更新 研究為什麼?
+是否需要上傳什麼檔案到cloudflare運行才能更新?
+
+"VIX 恐慌指數"也提供參考連結用以人工校對數值是否更新且正確
+
+"QQQ 最新股價"請根據落入"樂活五線譜趨勢圖"的五個區段虛線顏色呈現
+
+"樂活五線譜趨勢圖"的五個區段虛線顏色根據"CNN Fear & Greed Index 即時量表"的五個顏色
+極悲觀對應到極度恐懼 以此類推
+
+"Nasdaq 100 Forward P/E 價值區間"請將顏色對調
+```
+
+
+## 2026-11-01 22:42:16+08:00
+```text
+將所有需要用到的檔案git add並git commit 最後git push
+```
