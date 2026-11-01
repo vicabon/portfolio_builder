@@ -1022,29 +1022,24 @@ function getLohasPriceZone(row) {
         return {color: "var(--ink)", bg: "#f1f5f9", label: ""};
     }
     const c = Number(row.close);
-    // 以五條軌道之間的中點作為最接近軌道（五區段）分界，或直接依五段軌道顏色呈現：
-    // >= +1.5SD -> 極樂觀 (#008800)
-    // +0.5SD ~ +1.5SD -> 相對樂觀 (#66cc00)
-    // -0.5SD ~ +0.5SD -> 趨勢中軸 (#888888)
-    // -1.5SD ~ -0.5SD -> 相對悲觀 (#ff9900)
-    // < -1.5SD -> 極悲觀 (#cc0000)
-    const p15 = (row.p2sd + row.p1sd) / 2;
-    const p05 = (row.p1sd + row.tl) / 2;
-    const m05 = (row.tl + row.m1sd) / 2;
-    const m15 = (row.m1sd + row.m2sd) / 2;
-    if (c >= p15) {
-        return {color: LOHAS_BAND_COLORS.p2sd, bg: "#e3f7e8", label: "極樂觀區 (+2SD)"};
+    // 1. 落入「極樂觀 (+2SD)」值以上 -> 極樂觀顏色 (#008800)
+    // 2. 落入「相對樂觀 (+1SD)」與「極樂觀 (+2SD)」值之間 -> 相對樂觀顏色 (#66cc00)
+    // 3. 落入「相對悲觀 (-1SD)」與「相對樂觀 (+1SD)」值之間 -> 趨勢中軸顏色 (#888888)
+    // 4. 落入「極悲觀 (-2SD)」與「相對悲觀 (-1SD)」值之間 -> 相對悲觀顏色 (#ff9900)
+    // 5. 落入「極悲觀 (-2SD)」值以下 -> 極悲觀顏色 (#cc0000)
+    if (c >= row.p2sd) {
+        return {color: LOHAS_BAND_COLORS.p2sd, bg: "#e3f7e8", label: "極樂觀區 (≥ +2SD)"};
     }
-    if (c >= p05) {
-        return {color: LOHAS_BAND_COLORS.p1sd, bg: "#eefbe6", label: "相對樂觀區 (+1SD)"};
+    if (c >= row.p1sd) {
+        return {color: LOHAS_BAND_COLORS.p1sd, bg: "#eefbe6", label: "相對樂觀區 (+1SD ~ +2SD)"};
     }
-    if (c >= m05) {
-        return {color: LOHAS_BAND_COLORS.tl, bg: "#f1f3f5", label: "趨勢中軸區 (TL)"};
+    if (c > row.m1sd) {
+        return {color: LOHAS_BAND_COLORS.tl, bg: "#f1f3f5", label: "趨勢中軸區 (-1SD ~ +1SD)"};
     }
-    if (c >= m15) {
-        return {color: LOHAS_BAND_COLORS.m1sd, bg: "#fff4e5", label: "相對悲觀區 (-1SD)"};
+    if (c > row.m2sd) {
+        return {color: LOHAS_BAND_COLORS.m1sd, bg: "#fff4e5", label: "相對悲觀區 (-2SD ~ -1SD)"};
     }
-    return {color: LOHAS_BAND_COLORS.m2sd, bg: "#fde8e8", label: "極悲觀區 (-2SD)"};
+    return {color: LOHAS_BAND_COLORS.m2sd, bg: "#fde8e8", label: "極悲觀區 (≤ -2SD)"};
 }
 
 function renderMarketIndicators(ind) {
