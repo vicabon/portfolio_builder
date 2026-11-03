@@ -6,11 +6,9 @@ on:
       - main
       - master
   schedule:
-    # 每日台灣時間 07:00 與 16:00 自動重新抓取報價與歷史並建置（cron 以 UTC 計，台灣 = UTC+8）
-    # 台灣 07:00 = 前一日 UTC 23:00（可抓到美股前一晚收盤）
-    - cron: '0 23 * * *'
-    # 台灣 16:00 = UTC 08:00（台股收盤後）
-    - cron: '0 8 * * *'
+    # 每日每小時自動重新抓取報價與歷史並建置（每小時整點，cron 以 UTC 計）
+    # 註：GitHub Actions 排程在尖峰時段可能延遲數分鐘至數十分鐘執行
+    - cron: '0 * * * *'
   workflow_dispatch: # 支援在 GitHub Actions 頁面手動點擊執行
 
 # 設定 GITHUB_TOKEN 權限以部署到 GitHub Pages
