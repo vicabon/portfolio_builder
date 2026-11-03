@@ -235,17 +235,14 @@
                     <div id="lohas-close-title" class="metric-title"></div>
                     <div id="lohas-close-value" class="metric-value"></div>
                     <div id="lohas-close-badge"></div>
-                </div>
-                <div class="metric">
-                    <div class="metric-title">五線譜中軸 (TL)</div>
-                    <div id="lohas-tl-value" class="metric-value" style="color:#888888;"></div>
+                    <div id="lohas-tl-ref" class="metric-sub"></div>
                 </div>
                 <div class="metric">
                     <div class="metric-title">CNN 即時情緒狀態</div>
                     <div id="lohas-fg-rating" class="metric-value"></div>
                 </div>
                 <div class="metric">
-                    <div class="metric-title">CBOE VIX 恐慌指數 <a class="pe-src-link" href="https://finance.yahoo.com/quote/%5EVIX/" target="_blank" rel="noopener noreferrer">(Yahoo ↗)</a> <a class="pe-src-link" href="https://www.cboe.com/tradable-products/vix/" target="_blank" rel="noopener noreferrer">(CBOE ↗)</a></div>
+                    <div class="metric-title">CBOE VIX 波動指數 <a class="pe-src-link" href="https://finance.yahoo.com/quote/%5EVIX/" target="_blank" rel="noopener noreferrer">(Yahoo ↗)</a> <a class="pe-src-link" href="https://www.cboe.com/tradable-products/vix/" target="_blank" rel="noopener noreferrer">(CBOE ↗)</a></div>
                     <div id="lohas-vix-value" class="metric-value">—</div>
                     <div id="lohas-vix-badge"></div>
                     <div id="lohas-vix-date" class="metric-sub"></div>
@@ -1227,9 +1224,10 @@ function renderLohas(ticker) {
             ? `<span class="metric-badge" style="background:${latestZone.bg};color:${latestZone.color};border:1px solid ${latestZone.color};">${latestZone.label}</span>`
             : "";
     }
-    const tlValEl = document.getElementById("lohas-tl-value");
-    tlValEl.textContent = f(latest.tl);
-    tlValEl.style.color = LOHAS_BAND_COLORS.tl;
+    const tlRefEl = document.getElementById("lohas-tl-ref");
+    if (tlRefEl) {
+        tlRefEl.innerHTML = `五線譜中軸 (TL) 參考：<span style="color:${LOHAS_BAND_COLORS.tl};font-weight:600;">${f(latest.tl)}</span>`;
+    }
     document.getElementById("lohas-chart-title").textContent = `📈 ${ticker} 樂活五線譜趨勢圖`;
     const rangeStatus = document.getElementById("lohas-range-status");
     if (rangeStatus && dates.length) {

@@ -74,7 +74,7 @@ portfolio_builder/
    - 網址：`https://<你的帳號>.github.io/<repo名稱>/`
 
 4. **自動更新**：workflow 設定為
-   - **每個工作日台灣時間 16:00（收盤後）** 自動重建（cron `0 8 * * 1-5`，UTC）。
+   - **每日每小時整點** 自動重新抓取報價與歷史並重建（cron `0 * * * *`，UTC）。
    - push 到 `main` 時重建。
    - 也可在 Actions 頁面手動 **Run workflow**。
 

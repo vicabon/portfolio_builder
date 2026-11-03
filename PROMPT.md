@@ -134,3 +134,20 @@ MacroMicro 財經M平方的Nasdaq 100 Forward P/E Ratio數據與"雙站統計比
 ```text
 將所有需要用到的檔案git add並git commit 最後git push
 ```
+
+
+## 2026-11-03 13:04:19+08:00
+```text
+將往後所有prompts都記錄在PROMPT.md
+"樂活五線譜"頁面
+VIX應該是"波動指數" 非"恐慌指數"
+上方的各商品"最新股價"旁的"五線譜中軸 (TL)" 應該併入"最新股價"內顯示做參考即可
+"deploy.yml"改成"每日每小時自動重新抓取報價與歷史並建置"
+先不要git add和commit
+```
+
+
+## 2026-11-03 13:08:45+08:00
+```text
+請git add並commit 最後git push上github
+```
