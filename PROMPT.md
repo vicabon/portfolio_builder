@@ -151,3 +151,10 @@ VIX應該是"波動指數" 非"恐慌指數"
 ```text
 請git add並commit 最後git push上github
 ```
+
+
+## 2026-11-04 11:32:32+08:00
+```text
+已經經過了好幾個小時 https://vicabon.github.io/portfolio_builder/上的"Nasdaq 100 Forward P/E (DollarLiquidity ↗)"數值都沒被更新
+研究排查問題是出在cloudflare還是github上或是程式碼上?
+```

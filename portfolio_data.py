@@ -483,7 +483,14 @@ def get_vix():
 def get_nasdaq100_forward_pe_dollarliquidity():
     """從 DollarLiquidity.com 取得 Nasdaq-100 Forward P/E Ratio 最新統計數值與前值。"""
     try:
-        resp = requests.get(_DOLLARLIQUIDITY_URL, headers=_HEADERS, timeout=10)
+        # DollarLiquidity 走 Cloudflare CDN（s-maxage=6h + stale-while-revalidate），
+        # 直接抓可能拿到舊的邊緣快取；加時間戳 query 讓 CDN 視為新網址而回源。
+        resp = requests.get(
+            _DOLLARLIQUIDITY_URL,
+            params={"_": int(time.time())},
+            headers={**_HEADERS, "Cache-Control": "no-cache", "Pragma": "no-cache"},
+            timeout=15,
+        )
         resp.raise_for_status()
         text = resp.text
 

@@ -1141,7 +1141,8 @@ async function refreshLiveMarketIndicators() {
     }
     try {
         const dlUrl = "https://dollarliquidity.com/en/valuation/nasdaq-100-forward-pe";
-        const rDl = await fetch(proxied(dlUrl));
+        // 加時間戳避開 DollarLiquidity 的 Cloudflare 邊緣快取（s-maxage=6h），確保拿到最新數據
+        const rDl = await fetch(proxied(dlUrl + "?_=" + Date.now()), {cache: "no-store"});
         if (!rDl.ok) {
             console.warn(`DollarLiquidity PE 即時更新 HTTP ${rDl.status}（請確認 cloudflare-worker.js 已更新部署至 Cloudflare Workers 白名單）`);
         } else {
