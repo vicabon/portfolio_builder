@@ -6,9 +6,10 @@ on:
       - main
       - master
   schedule:
-    # 每日每小時自動重新抓取報價與歷史並建置（每小時整點，cron 以 UTC 計）
-    # 註：GitHub Actions 排程在尖峰時段可能延遲數分鐘至數十分鐘執行
-    - cron: '0 * * * *'
+    # 每日每小時自動重新抓取報價與歷史並建置（每小時第 17 分，cron 以 UTC 計）
+    # 註：避開整點 :00——GitHub 在整點負載最高，排程常被延遲或直接丟棄（實測 20 小時只跑了 3 次）。
+    #     即使如此，GitHub 排程仍是「盡力而為」，不保證每小時都會執行。
+    - cron: '17 * * * *'
   workflow_dispatch: # 支援在 GitHub Actions 頁面手動點擊執行
 
 # 設定 GITHUB_TOKEN 權限以部署到 GitHub Pages
