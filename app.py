@@ -216,12 +216,18 @@ def get_market_indicators():
     return jsonify(portfolio_data.get_market_indicators())
 
 
+EXTRA_LOHAS_TICKERS = ("0050.TW", "0052.TW", "006208.TW", "00631L.TW", "00685L.TW", "TQQQ")
+
+
 def build_lohas_bundle(holdings):
-    """靜態建置用：把每檔持股（排除現金、同 ticker 去重）的五線譜 + Fear&Greed + 市場指標一次算好。"""
+    """靜態建置用：把每檔持股（排除現金、同 ticker 去重）與額外觀察商品的五線譜 + Fear&Greed + 市場指標一次算好。"""
     tickers = sorted({
-        h["ticker"].upper()
-        for h in holdings
-        if not portfolio_data.is_cash(h["ticker"])
+        *(
+            h["ticker"].upper()
+            for h in holdings
+            if not portfolio_data.is_cash(h["ticker"])
+        ),
+        *EXTRA_LOHAS_TICKERS,
     })
     charts = {}
     for ticker in tickers:

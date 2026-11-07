@@ -110,11 +110,16 @@ def _yahoo_history(ticker, start_ts):
     timestamps = result.get("timestamp") or []
     closes = (((result.get("indicators") or {}).get("quote") or [{}])[0]).get("close") or []
     out = {}
+    upper_ticker = ticker.strip().upper()
     for ts, close in zip(timestamps, closes):
         if close is None or ts < start_ts:
             continue
         date_str = time.strftime("%Y-%m-%d", time.gmtime(ts))
-        out[date_str] = float(close)
+        val = float(close)
+        # Yahoo Finance 對 0052.TW（富邦科技 2025-11-17 1拆7）分割前歷史價未自動除權還原，手動除以 7
+        if upper_ticker == "0052.TW" and date_str < "2025-11-17" and val > 100:
+            val /= 7.0
+        out[date_str] = val
     return out
 
 

@@ -227,7 +227,7 @@
     <div id="tab-lohas" class="tab-panel">
         <div class="card">
             <div class="ticker-picker">
-                <label for="lohas-select">選擇商品（來自你的持股）</label>
+                <label for="lohas-select">選擇商品</label>
                 <select id="lohas-select" aria-label="選擇商品"></select>
             </div>
             <div class="metric-box">
@@ -235,11 +235,11 @@
                     <div id="lohas-close-title" class="metric-title"></div>
                     <div id="lohas-close-value" class="metric-value"></div>
                     <div id="lohas-close-badge"></div>
-                    <div id="lohas-tl-ref" class="metric-sub"></div>
                 </div>
                 <div class="metric">
                     <div class="metric-title">CNN 即時情緒狀態</div>
                     <div id="lohas-fg-rating" class="metric-value"></div>
+                    <div id="lohas-fg-badge"></div>
                 </div>
                 <div class="metric">
                     <div class="metric-title">CBOE VIX 波動指數 <a class="pe-src-link" href="https://finance.yahoo.com/quote/%5EVIX/" target="_blank" rel="noopener noreferrer">(Yahoo ↗)</a> <a class="pe-src-link" href="https://www.cboe.com/tradable-products/vix/" target="_blank" rel="noopener noreferrer">(CBOE ↗)</a></div>
@@ -555,8 +555,14 @@ async function refreshLivePortfolio() {
         drawCharts(sliceByRange(historyCache, currentRange));
     }
 
-    // 用剛剛抓到的原幣即時收盤價，更新樂活五線譜快取（只更新已載入過的商品，
-    // 未載入的等使用者切換到該商品時才會抓取，避免重複打 API）
+    // 用剛剛抓到的原幣即時收盤價，更新樂活五線譜快取（包含非持股的額外觀察商品）
+    const extraLohasTickers = Object.keys(lohasCache).filter(t => nativeCloseByTicker[t] == null);
+    await Promise.all(extraLohasTickers.map(async t => {
+        const live = await fetchLiveQuote(t, false, false);
+        if (!live) return;
+        const val = live.price != null ? live.price : live.priceUsd;
+        if (val != null) nativeCloseByTicker[t] = val;
+    }));
     const today = nowStr().slice(0, 10);
     Object.keys(lohasCache).forEach(ticker => {
         const liveClose = nativeCloseByTicker[ticker];
@@ -842,11 +848,11 @@ function sliceLohasByRange(chartData, range) {
 }
 
 function gaugeZoneInfo(score) {
-    if (score < 25) return {key: "extreme-fear", color: "#cc0000", bg: "#fde8e8", zh: "極度恐懼", en: "Extreme Fear", label: "0~<25 極度恐懼 (Extreme Fear)"};
-    if (score < 45) return {key: "fear", color: "#ff9900", bg: "#fff4e5", zh: "恐懼", en: "Fear", label: "25~<45 恐懼 (Fear)"};
-    if (score < 55) return {key: "neutral", color: "#888888", bg: "#f1f3f5", zh: "中性", en: "Neutral", label: "45~<55 中性 (Neutral)"};
-    if (score < 75) return {key: "greed", color: "#66cc00", bg: "#eefbe6", zh: "貪婪", en: "Greed", label: "55~<75 貪婪 (Greed)"};
-    return {key: "extreme-greed", color: "#008800", bg: "#e3f7e8", zh: "極度貪婪", en: "Extreme Greed", label: "75~100 極度貪婪 (Extreme Greed)"};
+    if (score < 25) return {key: "extreme-fear", color: "#cc0000", bg: "#fde8e8", zh: "極度恐懼", en: "Extreme Fear", range: "0~<25", label: "0~<25 極度恐懼 (Extreme Fear)"};
+    if (score < 45) return {key: "fear", color: "#ff9900", bg: "#fff4e5", zh: "恐懼", en: "Fear", range: "25~<45", label: "25~<45 恐懼 (Fear)"};
+    if (score < 55) return {key: "neutral", color: "#888888", bg: "#f1f3f5", zh: "中性", en: "Neutral", range: "45~<55", label: "45~<55 中性 (Neutral)"};
+    if (score < 75) return {key: "greed", color: "#66cc00", bg: "#eefbe6", zh: "貪婪", en: "Greed", range: "55~<75", label: "55~<75 貪婪 (Greed)"};
+    return {key: "extreme-greed", color: "#008800", bg: "#e3f7e8", zh: "極度貪婪", en: "Extreme Greed", range: "75~100", label: "75~100 極度貪婪 (Extreme Greed)"};
 }
 
 function gaugeColor(score) {
@@ -946,8 +952,12 @@ function renderGauge(fg) {
     const zone = gaugeZoneInfo(score);
     const color = zone.color;
     const ratingEl = document.getElementById("lohas-fg-rating");
-    ratingEl.textContent = `${score} — ${zone.zh} (${zone.en})`;
+    ratingEl.textContent = `${score}`;
     ratingEl.style.color = color;
+    const fgBadgeEl = document.getElementById("lohas-fg-badge");
+    if (fgBadgeEl) {
+        fgBadgeEl.innerHTML = `<span class="metric-badge" style="background:${zone.bg};color:${color};border:1px solid ${color};">${zone.zh}（${zone.range}）</span>`;
+    }
     document.getElementById("lohas-gauge-title").innerHTML =
         `📊 CNN Fear &amp; Greed Index 即時量表（當前分數：<span style="color:${color}">${score}</span>｜區間：<span style="color:${color}">${zone.label}</span>）`;
 
@@ -1013,30 +1023,36 @@ const LOHAS_BAND_COLORS = {
     m2sd: "#cc0000", // 極悲觀 (-2SD) <-> 極度恐懼 (Extreme Fear)
 };
 
-// 根據最新股價落入五線譜的哪個區段，回傳對應的五線譜虛線顏色與區間標籤
-function getLohasPriceZone(row) {
+// 根據最新股價落入五線譜的哪個區段，回傳對應的五線譜虛線顏色與區間數值範圍標籤
+function getLohasPriceZone(row, currencySymbol = "") {
     if (!row || row.close == null) {
-        return {color: "var(--ink)", bg: "#f1f5f9", label: ""};
+        return {color: "var(--ink)", bg: "#f1f5f9", range: "", label: ""};
     }
     const c = Number(row.close);
+    const f = v => currencySymbol + Number(v).toFixed(2);
     // 1. 落入「極樂觀 (+2SD)」值以上 -> 極樂觀顏色 (#008800)
     // 2. 落入「相對樂觀 (+1SD)」與「極樂觀 (+2SD)」值之間 -> 相對樂觀顏色 (#66cc00)
     // 3. 落入「相對悲觀 (-1SD)」與「相對樂觀 (+1SD)」值之間 -> 趨勢中軸顏色 (#888888)
     // 4. 落入「極悲觀 (-2SD)」與「相對悲觀 (-1SD)」值之間 -> 相對悲觀顏色 (#ff9900)
     // 5. 落入「極悲觀 (-2SD)」值以下 -> 極悲觀顏色 (#cc0000)
     if (c >= row.p2sd) {
-        return {color: LOHAS_BAND_COLORS.p2sd, bg: "#e3f7e8", label: "極樂觀區 (≥ +2SD)"};
+        const range = `≥ ${f(row.p2sd)}`;
+        return {color: LOHAS_BAND_COLORS.p2sd, bg: "#e3f7e8", range, label: `極樂觀區（${range}）`};
     }
     if (c >= row.p1sd) {
-        return {color: LOHAS_BAND_COLORS.p1sd, bg: "#eefbe6", label: "相對樂觀區 (+1SD ~ +2SD)"};
+        const range = `${f(row.p1sd)}～${f(row.p2sd)}`;
+        return {color: LOHAS_BAND_COLORS.p1sd, bg: "#eefbe6", range, label: `相對樂觀區（${range}）`};
     }
     if (c > row.m1sd) {
-        return {color: LOHAS_BAND_COLORS.tl, bg: "#f1f3f5", label: "趨勢中軸區 (-1SD ~ +1SD)"};
+        const range = `${f(row.m1sd)}～${f(row.p1sd)}`;
+        return {color: LOHAS_BAND_COLORS.tl, bg: "#f1f3f5", range, label: `趨勢中軸區（${range}）`};
     }
     if (c > row.m2sd) {
-        return {color: LOHAS_BAND_COLORS.m1sd, bg: "#fff4e5", label: "相對悲觀區 (-2SD ~ -1SD)"};
+        const range = `${f(row.m2sd)}～${f(row.m1sd)}`;
+        return {color: LOHAS_BAND_COLORS.m1sd, bg: "#fff4e5", range, label: `相對悲觀區（${range}）`};
     }
-    return {color: LOHAS_BAND_COLORS.m2sd, bg: "#fde8e8", label: "極悲觀區 (≤ -2SD)"};
+    const range = `≤ ${f(row.m2sd)}`;
+    return {color: LOHAS_BAND_COLORS.m2sd, bg: "#fde8e8", range, label: `極悲觀區（${range}）`};
 }
 
 function renderMarketIndicators(ind) {
@@ -1182,7 +1198,7 @@ async function refreshLiveMarketIndicators() {
 function renderLohasSidebar(bundle, row) {
     const c = bundle.currencySymbol;
     const f = v => c + Number(v).toFixed(2);
-    const z = getLohasPriceZone(row);
+    const z = getLohasPriceZone(row, c);
     document.getElementById("lohas-sidebar").innerHTML = `
         <h3 class="sidebar-title">📈 歷史數據細節（📅 ${row.date}）</h3>
         <div class="price-box">
@@ -1213,7 +1229,7 @@ function renderLohas(ticker) {
     const dates = data.map(r => r.date);
     const c = bundle.currencySymbol;
     const f = v => c + Number(v).toFixed(2);
-    const latestZone = getLohasPriceZone(latest);
+    const latestZone = getLohasPriceZone(latest, c);
 
     document.getElementById("lohas-close-title").textContent = `${ticker} 最新股價`;
     const closeValEl = document.getElementById("lohas-close-value");
@@ -1224,10 +1240,6 @@ function renderLohas(ticker) {
         closeBadgeEl.innerHTML = latestZone.label
             ? `<span class="metric-badge" style="background:${latestZone.bg};color:${latestZone.color};border:1px solid ${latestZone.color};">${latestZone.label}</span>`
             : "";
-    }
-    const tlRefEl = document.getElementById("lohas-tl-ref");
-    if (tlRefEl) {
-        tlRefEl.innerHTML = `五線譜中軸 (TL) 參考：<span style="color:${LOHAS_BAND_COLORS.tl};font-weight:600;">${f(latest.tl)}</span>`;
     }
     document.getElementById("lohas-chart-title").textContent = `📈 ${ticker} 樂活五線譜趨勢圖`;
     const rangeStatus = document.getElementById("lohas-range-status");
@@ -1269,6 +1281,8 @@ document.getElementById("lohas-range-buttons").addEventListener("click", e => {
     if (lohasSelected && lohasCache[lohasSelected]) renderLohas(lohasSelected);
 });
 
+const EXTRA_LOHAS_TICKERS = ["0050.TW", "0052.TW", "006208.TW", "00631L.TW", "00685L.TW", "TQQQ"];
+
 async function loadLohas() {
     if (lohasLoaded) return;
     const select = document.getElementById("lohas-select");
@@ -1305,14 +1319,17 @@ async function loadLohas() {
         }
         await refreshLiveMarketIndicators();
     } else {
-        // 以目前持股（排除現金）作為可選商品，逐檔取五線譜
+        // 以目前持股（排除現金）加上額外指定商品（0052.TW, 006208.TW, TQQQ）作為可選商品，逐檔取五線譜
         const [pf, fg, mkt] = await Promise.all([
             fetch(API + "/api/portfolio").then(r => r.json()),
             fetch(API + "/api/feargreed").then(r => r.json()),
             fetch(API + "/api/market-indicators").then(r => r.json()).catch(() => null),
         ]);
-        // 去重（例如美股 QQQM 與台股複委託 QQQM 共用同一張五線譜）
-        const tickers = [...new Set((pf.positions || []).filter(p => !p.isCash).map(p => p.ticker))];
+        // 去重（例如美股 QQQM 與台股複委託 QQQM 共用同一張五線譜）並加入固定觀察清單
+        const tickers = [...new Set([
+            ...(pf.positions || []).filter(p => !p.isCash).map(p => p.ticker),
+            ...EXTRA_LOHAS_TICKERS,
+        ])].sort();
         select.innerHTML = tickers.map(t => `<option value="${t}">${t}</option>`).join("");
         fearGreed = fg;
         marketIndicators = mkt;
@@ -1338,7 +1355,8 @@ async function loadLohas() {
     }
 
     // 靜態模式：一次性填入選單與圖
-    const tickers = (STATIC.lohas && STATIC.lohas.tickers) || Object.keys(lohasCache);
+    const baseTickers = (STATIC.lohas && STATIC.lohas.tickers) || Object.keys(lohasCache);
+    const tickers = [...new Set([...baseTickers, ...EXTRA_LOHAS_TICKERS])].sort();
     select.innerHTML = tickers.map(t => `<option value="${t}">${t}</option>`).join("");
     select.onchange = e => renderLohas(e.target.value);
     renderGauge(fearGreed);
