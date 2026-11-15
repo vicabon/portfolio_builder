@@ -165,10 +165,6 @@
                 <div class="stat-breakdown" id="total-usd-breakdown"></div>
             </div>
             <div class="stat">
-                <div class="label">持有檔數</div>
-                <div class="value" id="count-value">—</div>
-            </div>
-            <div class="stat">
                 <div class="label">投組加權 Beta</div>
                 <div class="value" id="beta-value">—</div>
             </div>
@@ -211,15 +207,12 @@
         <div class="toolbar">
             <div class="rng" id="range-buttons">
                 <button data-range="1D">1D</button>
-                <button data-range="5D">5D</button>
                 <button data-range="1M" class="active">1M</button>
                 <button data-range="3M">3M</button>
                 <button data-range="6M">6M</button>
                 <button data-range="YTD">YTD</button>
                 <button data-range="1Y">1Y</button>
                 <button data-range="3Y">3Y</button>
-                <button data-range="5Y">5Y</button>
-                <button data-range="ALL">全部</button>
             </div>
         </div>
         <div class="charts">
@@ -377,7 +370,6 @@
                 <div class="toolbar" style="margin-bottom:0;">
                     <div class="rng" id="lohas-range-buttons">
                         <button data-range="1D">1D</button>
-                        <button data-range="5D">5D</button>
                         <button data-range="1M">1M</button>
                         <button data-range="3M">3M</button>
                         <button data-range="6M">6M</button>
@@ -633,7 +625,6 @@ function renderPortfolio(data) {
     const totalUsd = data.totalValueUsd != null ? data.totalValueUsd : (fx && data.totalValue != null ? data.totalValue / fx : null);
     const totalUsdEl = document.getElementById("total-usd-value");
     if (totalUsdEl) totalUsdEl.textContent = fmtUSD(totalUsd);
-    document.getElementById("count-value").textContent = (data.positions || []).length;
     document.getElementById("beta-value").textContent = data.portfolioBeta != null ? Number(data.portfolioBeta).toFixed(2) : "—";
     document.getElementById("fx-value").textContent = data.fxRate ? Number(data.fxRate).toFixed(3) : "—";
 
@@ -757,7 +748,7 @@ document.getElementById("add-form").addEventListener("submit", async (e) => {
 let historyCache = null;
 let currentRange = "1M";
 
-// 依區間裁切歷史資料。range: 1D/5D/1M/3M/6M/YTD/1Y/3Y/5Y/ALL
+// 依區間裁切歷史資料。range: 1D/1M/3M/6M/YTD/1Y/3Y
 function sliceByRange(hist, range) {
     if (!hist.dates.length) return hist;
     const n = hist.dates.length;
@@ -766,11 +757,9 @@ function sliceByRange(hist, range) {
         const year = hist.dates[n - 1].slice(0, 4);
         cutoffIdx = hist.dates.findIndex(d => d >= year + "-01-01");
         if (cutoffIdx < 0) cutoffIdx = 0;
-    } else if (range === "ALL") {
-        cutoffIdx = 0;
     } else {
         // 以交易日數估算（~21 日/月、~252 日/年）
-        const days = {"1D": 2, "5D": 5, "1M": 21, "3M": 63, "6M": 126, "1Y": 252, "3Y": 756, "5Y": 1260}[range] || n;
+        const days = {"1D": 2, "1M": 21, "3M": 63, "6M": 126, "1Y": 252, "3Y": 756}[range] || n;
         cutoffIdx = Math.max(0, n - days);
     }
     return {
@@ -904,7 +893,7 @@ function recomputeLohasBundle(bundle, latestClose, todayDateStr) {
     return {...bundle, chartData, lastDate: chartData[chartData.length - 1].date};
 }
 
-// 依時間軸區間裁切樂活五線譜資料。range: 1D/5D/1M/3M/6M/YTD/1Y/3Y
+// 依時間軸區間裁切樂活五線譜資料。range: 1D/1M/3M/6M/YTD/1Y/3Y
 function sliceLohasByRange(chartData, range) {
     if (!chartData || !chartData.length) return [];
     const n = chartData.length;
@@ -916,7 +905,6 @@ function sliceLohasByRange(chartData, range) {
     } else {
         const days = {
             "1D": 2,
-            "5D": 5,
             "1M": 21,
             "3M": 63,
             "6M": 126,
