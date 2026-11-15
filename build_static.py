@@ -31,7 +31,7 @@ def main():
     portfolio = app.build_portfolio(holdings)
 
     print("計算歷史回朔…")
-    history = portfolio_data.get_history(holdings)
+    history = portfolio_data.get_history(holdings, holdings_2025=app.load_2025_holdings())
 
     print("計算樂活五線譜 + Fear & Greed…")
     lohas = app.build_lohas_bundle(holdings)

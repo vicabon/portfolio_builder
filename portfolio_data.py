@@ -117,7 +117,7 @@ def _yahoo_history(ticker, start_ts):
         date_str = time.strftime("%Y-%m-%d", time.gmtime(ts))
         val = float(close)
         # Yahoo Finance 對 0052.TW（富邦科技 2025-11-17 1拆7）分割前歷史價未自動除權還原，手動除以 7
-        if upper_ticker == "0052.TW" and date_str < "2025-11-17" and val > 100:
+        if upper_ticker == "0052.TW" and date_str < "2025-11-17" and val > 60:
             val /= 7.0
         out[date_str] = val
     return out
@@ -240,34 +240,44 @@ def get_quotes(tickers):
 
 # ------------------------------------------------------------------ 歷史回朔
 
-def get_history(holdings, start="2022-01-01"):
-    """歷史回朔：以「目前持股固定不變」為假設，往回推算。
-
-    holdings: [{"ticker": ..., "shares": ...}, ...]
-    回傳：
-      dates:        日期序列
-      totalValue:   每日總市值（台幣）
-      perTicker:    {ticker: {"value": [...], "weight": [...]}}
-      dailyReturns: [{"date", "value", "ret"}]  總市值每日報酬率
-    """
-    import numpy as np  # noqa: F401 (保留給未來擴充)
-    import pandas as pd
-
+def _extract_shares_map(holdings):
     shares = {}
-    for holding in holdings:
+    for holding in holdings or []:
         qty = _to_float(holding.get("shares"))
         if qty:
             key = holding["ticker"].strip().upper()
             # 同 ticker 可能出現多筆（例如美股 QQQM + 台股複委託 QQQM），
             # 對「總市值走勢」而言報價來源相同，股數應合併加總，不能覆蓋。
             shares[key] = shares.get(key, 0.0) + qty
+    return shares
+
+
+def get_history(holdings, start="2020-11-01", holdings_2025=None):
+    """歷史回朔：以「目前持股固定不變」為假設，往回推算（預設涵蓋完整 5 年以上交易日）。
+
+    holdings: [{"ticker": ..., "shares": ...}, ...]
+    holdings_2025: 2025portfolio.json 持倉清單（選擇性，用於同步計算 2025 總資產曲線）
+    回傳：
+      dates:          日期序列
+      totalValue:     每日總市值（台幣）
+      totalValue2025: 2025portfolio.json 每日總市值（台幣）
+      holdings2025:   [{"ticker", "shares"}] 供前端即時刷新時同步更新 2025 曲線最後一點
+      perTicker:      {ticker: {"value": [...], "weight": [...]}}
+      dailyReturns:   [{"date", "value", "ret"}]  總市值每日報酬率
+    """
+    import numpy as np  # noqa: F401 (保留給未來擴充)
+    import pandas as pd
+
+    shares = _extract_shares_map(holdings)
+    shares_2025 = _extract_shares_map(holdings_2025)
     if not shares:
         return _empty_history()
 
     start_ts = int(time.mktime(time.strptime(start, "%Y-%m-%d")))
+    all_tickers = sorted(set(shares.keys()) | set(shares_2025.keys()))
 
     close_frames = {}
-    for ticker in shares:
+    for ticker in all_tickers:
         if is_cash(ticker):
             continue  # 現金無需抓歷史，稍後以固定值加入
         hist = _yahoo_history(ticker, start_ts)
@@ -301,7 +311,9 @@ def get_history(holdings, start="2022-01-01"):
         fx_aligned = None
 
     value_frame = pd.DataFrame(index=combined.index)
-    for ticker in close_frames:
+    for ticker in shares:
+        if is_cash(ticker) or ticker not in combined.columns:
+            continue
         price_series = combined[ticker]
         if not is_taiwan_ticker(ticker) and fx_aligned is not None:
             price_series = price_series * fx_aligned
@@ -322,6 +334,20 @@ def get_history(holdings, start="2022-01-01"):
     if value_frame.empty:
         return _empty_history()
 
+    total_value_2025 = []
+    if shares_2025:
+        vf_2025 = pd.DataFrame(index=value_frame.index)
+        for ticker, qty in shares_2025.items():
+            if is_cash(ticker):
+                vf_2025[ticker] = float(qty)
+            elif ticker in combined.columns:
+                ps = combined.loc[value_frame.index, ticker]
+                if not is_taiwan_ticker(ticker) and fx_aligned is not None:
+                    ps = ps * fx_aligned.loc[value_frame.index]
+                vf_2025[ticker] = ps * qty
+        total_2025 = vf_2025.fillna(0.0).sum(axis=1)
+        total_value_2025 = [round(float(v), 2) for v in total_2025]
+
     per_ticker = {}
     for ticker in value_frame.columns:
         values = value_frame[ticker]
@@ -340,19 +366,28 @@ def get_history(holdings, start="2022-01-01"):
     return {
         "dates": [d.strftime("%Y-%m-%d") for d in value_frame.index],
         "totalValue": [round(float(v), 2) for v in total],
+        "totalValue2025": total_value_2025,
+        "holdings2025": [{"ticker": k, "shares": v} for k, v in shares_2025.items()],
         "perTicker": per_ticker,
         "dailyReturns": daily_returns,
     }
 
 
 def _empty_history():
-    return {"dates": [], "totalValue": [], "perTicker": {}, "dailyReturns": []}
+    return {
+        "dates": [],
+        "totalValue": [],
+        "totalValue2025": [],
+        "holdings2025": [],
+        "perTicker": {},
+        "dailyReturns": [],
+    }
 
 
 # ------------------------------------------------------------ 樂活五線譜
 
 _LOHAS_WINDOW = 875  # 約 3.5 年交易日（回歸與標準差計算窗口）
-_LOHAS_DISPLAY_WINDOW = 1260  # 約 5 年交易日（供前端 5Y 瀏覽）
+_LOHAS_DISPLAY_WINDOW = 875  # 約 3.5 年交易日（供前端 3Y 瀏覽）
 
 
 def get_lohas(ticker, start="2019-01-01"):

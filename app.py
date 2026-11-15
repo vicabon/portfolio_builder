@@ -17,6 +17,7 @@ import portfolio_data
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PORTFOLIO_FILE = os.path.join(BASE_DIR, "portfolio.json")
+PORTFOLIO_2025_FILE = os.path.join(BASE_DIR, "2025portfolio.json")
 
 app = Flask(__name__, static_folder=None)
 
@@ -30,6 +31,18 @@ def load_holdings():
         return data if isinstance(data, list) else []
     except Exception as error:
         print(f"[portfolio] 讀取失敗：{error}")
+        return []
+
+
+def load_2025_holdings():
+    if not os.path.exists(PORTFOLIO_2025_FILE):
+        return []
+    try:
+        with open(PORTFOLIO_2025_FILE, "r", encoding="utf-8") as handle:
+            data = json.load(handle)
+        return data if isinstance(data, list) else []
+    except Exception as error:
+        print(f"[2025portfolio] 讀取失敗：{error}")
         return []
 
 
@@ -173,23 +186,27 @@ def build_portfolio(holdings):
                 breakdown["us"] += position["value"]
 
     positions.sort(key=lambda p: p["value"] or 0, reverse=True)
+    fx_rate = portfolio_data.get_usd_twd_rate()
+    total_usd = round(total / fx_rate, 2) if fx_rate else None
     return {
         "positions": positions,
         "totalValue": round(total, 2),
-        "fxRate": portfolio_data.get_usd_twd_rate(),
+        "totalValueUsd": total_usd,
+        "fxRate": fx_rate,
         "portfolioBeta": round(portfolio_beta, 3),
         "breakdown": {k: round(v, 2) for k, v in breakdown.items()},
+        "breakdownUsd": {k: round(v / fx_rate, 2) for k, v in breakdown.items()} if fx_rate else None,
     }
 
 
 @app.route("/api/history", methods=["GET"])
 def get_history():
-    """歷史回朔（假設目前持股固定不變）。"""
+    """歷史回朔（假設目前持股固定不變，並同步回傳 2025portfolio.json 總資產曲線）。"""
     holdings = load_holdings()
     if not holdings:
-        return jsonify({"dates": [], "totalValue": [], "perTicker": {}, "dailyReturns": []})
-    start = request.args.get("start", "2022-01-01")
-    return jsonify(portfolio_data.get_history(holdings, start=start))
+        return jsonify({"dates": [], "totalValue": [], "totalValue2025": [], "holdings2025": [], "perTicker": {}, "dailyReturns": []})
+    start = request.args.get("start", "2020-11-01")
+    return jsonify(portfolio_data.get_history(holdings, start=start, holdings_2025=load_2025_holdings()))
 
 
 @app.route("/api/quote/<ticker>", methods=["GET"])

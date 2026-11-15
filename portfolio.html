@@ -160,6 +160,11 @@
                 <div class="stat-breakdown" id="total-breakdown"></div>
             </div>
             <div class="stat">
+                <div class="label">總資產（美元）</div>
+                <div class="value" id="total-usd-value">—</div>
+                <div class="stat-breakdown" id="total-usd-breakdown"></div>
+            </div>
+            <div class="stat">
                 <div class="label">持有檔數</div>
                 <div class="value" id="count-value">—</div>
             </div>
@@ -208,9 +213,12 @@
                 <button data-range="1D">1D</button>
                 <button data-range="5D">5D</button>
                 <button data-range="1M" class="active">1M</button>
+                <button data-range="3M">3M</button>
                 <button data-range="6M">6M</button>
                 <button data-range="YTD">YTD</button>
                 <button data-range="1Y">1Y</button>
+                <button data-range="3Y">3Y</button>
+                <button data-range="5Y">5Y</button>
                 <button data-range="ALL">全部</button>
             </div>
         </div>
@@ -371,11 +379,11 @@
                         <button data-range="1D">1D</button>
                         <button data-range="5D">5D</button>
                         <button data-range="1M">1M</button>
+                        <button data-range="3M">3M</button>
                         <button data-range="6M">6M</button>
                         <button data-range="YTD">YTD</button>
                         <button data-range="1Y">1Y</button>
                         <button data-range="3Y" class="active">3Y</button>
-                        <button data-range="5Y">5Y</button>
                     </div>
                 </div>
             </div>
@@ -416,6 +424,7 @@ const API = "";
 // 本機 Flask 模式：window.STATIC_DATA 不存在，改打 /api。
 const STATIC = (typeof window.STATIC_DATA !== "undefined") ? window.STATIC_DATA : null;
 const fmtTWD = v => v == null ? "—" : "NT$" + Number(v).toLocaleString("zh-TW", {maximumFractionDigits: 0});
+const fmtUSD = v => v == null ? "—" : "US$" + Number(v).toLocaleString("zh-TW", {maximumFractionDigits: 0});
 const fmtPct = v => (v == null ? "—" : Number(v).toFixed(2) + "%");
 function nowStr() {
     const d = new Date();
@@ -530,39 +539,80 @@ async function refreshLivePortfolio() {
     });
     positions.sort((a, b) => (b.value || 0) - (a.value || 0));
 
+    const totalTwd = Math.round(total * 100) / 100;
+    const totalUsd = fxRate ? Math.round((total / fxRate) * 100) / 100 : null;
     livePortfolio = {
         positions,
-        totalValue: Math.round(total * 100) / 100,
+        totalValue: totalTwd,
+        totalValueUsd: totalUsd,
         fxRate,
         portfolioBeta: Math.round(portfolioBeta * 1000) / 1000,
         breakdown: {us: Math.round(breakdown.us * 100) / 100, tw: Math.round(breakdown.tw * 100) / 100, cash: Math.round(breakdown.cash * 100) / 100},
+        breakdownUsd: fxRate ? {
+            us: Math.round((breakdown.us / fxRate) * 100) / 100,
+            tw: Math.round((breakdown.tw / fxRate) * 100) / 100,
+            cash: Math.round((breakdown.cash / fxRate) * 100) / 100,
+        } : null,
     };
     renderPortfolio(livePortfolio);
 
-    // 把「歷史回朔」最新一天的總市值也換成剛剛算出的即時總資產，
+    // 補齊樂活五線譜與 2025portfolio 所需的非目前持股即時報價
+    const h2025List = (historyCache && historyCache.holdings2025) || [];
+    const extraTickers = [...new Set([
+        ...Object.keys(lohasCache),
+        ...h2025List.map(h => h.ticker).filter(t => !/^(TWD-CASH|CASH|TWD)$/i.test(t)),
+    ])].filter(t => nativeCloseByTicker[t] == null);
+    await Promise.all(extraTickers.map(async t => {
+        const live = await fetchLiveQuote(t, false, false);
+        if (!live) return;
+        const val = live.price != null ? live.price : live.priceUsd;
+        if (val != null) nativeCloseByTicker[t] = val;
+    }));
+
+    // 把「歷史回朔」最新一天的總市值（含 2025portfolio 曲線）也換成剛剛算出的即時總資產，
     // 讓走勢圖的最後一點反映按下「更新報價與數據」之後的最新數字。
     if (historyCache && historyCache.dates && historyCache.dates.length) {
         const lastIdx = historyCache.dates.length - 1;
         const today = nowStr().slice(0, 10);
+        let live2025Total = null;
+        if (h2025List.length) {
+            let sum2025 = 0;
+            let allOk = true;
+            h2025List.forEach(item => {
+                const t = item.ticker;
+                const qty = Number(item.shares || 0);
+                if (/^(TWD-CASH|CASH|TWD)$/i.test(t)) {
+                    sum2025 += qty;
+                } else if (nativeCloseByTicker[t] != null) {
+                    const isTw = /\.TWO?$/i.test(t);
+                    const unitTwd = isTw ? nativeCloseByTicker[t] : nativeCloseByTicker[t] * fxRate;
+                    sum2025 += unitTwd * qty;
+                } else {
+                    allOk = false;
+                }
+            });
+            if (allOk && sum2025 > 0) {
+                live2025Total = Math.round(sum2025 * 100) / 100;
+            }
+        }
+        const has2025 = Array.isArray(historyCache.totalValue2025) && historyCache.totalValue2025.length > 0;
+        const fallback2025 = has2025 ? historyCache.totalValue2025[lastIdx] : null;
+        const next2025Val = live2025Total != null ? live2025Total : fallback2025;
+
         if (historyCache.dates[lastIdx] === today) {
             historyCache.totalValue[lastIdx] = livePortfolio.totalValue;
+            if (has2025 && next2025Val != null) historyCache.totalValue2025[lastIdx] = next2025Val;
         } else {
             // 快照最後一天不是今天（例如收盤後才建置），改成新增一筆今天的資料點
             historyCache.dates.push(today);
             historyCache.totalValue.push(livePortfolio.totalValue);
+            if (has2025) historyCache.totalValue2025.push(next2025Val);
         }
         updateHistoryStatusText();
         drawCharts(sliceByRange(historyCache, currentRange));
     }
 
     // 用剛剛抓到的原幣即時收盤價，更新樂活五線譜快取（包含非持股的額外觀察商品）
-    const extraLohasTickers = Object.keys(lohasCache).filter(t => nativeCloseByTicker[t] == null);
-    await Promise.all(extraLohasTickers.map(async t => {
-        const live = await fetchLiveQuote(t, false, false);
-        if (!live) return;
-        const val = live.price != null ? live.price : live.priceUsd;
-        if (val != null) nativeCloseByTicker[t] = val;
-    }));
     const today = nowStr().slice(0, 10);
     Object.keys(lohasCache).forEach(ticker => {
         const liveClose = nativeCloseByTicker[ticker];
@@ -578,6 +628,10 @@ async function refreshLivePortfolio() {
 function renderPortfolio(data) {
     const area = document.getElementById("positions-area");
     document.getElementById("total-value").textContent = fmtTWD(data.totalValue);
+    const fx = data.fxRate ? Number(data.fxRate) : null;
+    const totalUsd = data.totalValueUsd != null ? data.totalValueUsd : (fx && data.totalValue != null ? data.totalValue / fx : null);
+    const totalUsdEl = document.getElementById("total-usd-value");
+    if (totalUsdEl) totalUsdEl.textContent = fmtUSD(totalUsd);
     document.getElementById("count-value").textContent = (data.positions || []).length;
     document.getElementById("beta-value").textContent = data.portfolioBeta != null ? Number(data.portfolioBeta).toFixed(2) : "—";
     document.getElementById("fx-value").textContent = data.fxRate ? Number(data.fxRate).toFixed(3) : "—";
@@ -589,6 +643,18 @@ function renderPortfolio(data) {
             <div><span class="k">美股部分：</span><span class="v">${fmtTWD(bd.us)}</span></div>
             <div><span class="k">台股部分：</span><span class="v">${fmtTWD(bd.tw)}</span></div>
             <div><span class="k">台幣現金：</span><span class="v">${fmtTWD(bd.cash)}</span></div>`;
+    }
+    const bdUsd = data.breakdownUsd || (fx ? {
+        us: bd.us != null ? bd.us / fx : null,
+        tw: bd.tw != null ? bd.tw / fx : null,
+        cash: bd.cash != null ? bd.cash / fx : null,
+    } : {});
+    const breakdownUsdEl = document.getElementById("total-usd-breakdown");
+    if (breakdownUsdEl) {
+        breakdownUsdEl.innerHTML = `
+            <div><span class="k">美股部分：</span><span class="v">${fmtUSD(bdUsd.us)}</span></div>
+            <div><span class="k">台股部分：</span><span class="v">${fmtUSD(bdUsd.tw)}</span></div>
+            <div><span class="k">台幣現金：</span><span class="v">${fmtUSD(bdUsd.cash)}</span></div>`;
     }
 
     if (!data.positions || !data.positions.length) {
@@ -690,7 +756,7 @@ document.getElementById("add-form").addEventListener("submit", async (e) => {
 let historyCache = null;
 let currentRange = "1M";
 
-// 依區間裁切歷史資料。range: 1D/5D/1M/6M/YTD/1Y/ALL
+// 依區間裁切歷史資料。range: 1D/5D/1M/3M/6M/YTD/1Y/3Y/5Y/ALL
 function sliceByRange(hist, range) {
     if (!hist.dates.length) return hist;
     const n = hist.dates.length;
@@ -703,12 +769,15 @@ function sliceByRange(hist, range) {
         cutoffIdx = 0;
     } else {
         // 以交易日數估算（~21 日/月、~252 日/年）
-        const days = {"1D": 2, "5D": 5, "1M": 21, "6M": 126, "1Y": 252}[range] || n;
+        const days = {"1D": 2, "5D": 5, "1M": 21, "3M": 63, "6M": 126, "1Y": 252, "3Y": 756, "5Y": 1260}[range] || n;
         cutoffIdx = Math.max(0, n - days);
     }
     return {
         dates: hist.dates.slice(cutoffIdx),
         totalValue: hist.totalValue.slice(cutoffIdx),
+        totalValue2025: (hist.totalValue2025 && hist.totalValue2025.length)
+            ? hist.totalValue2025.slice(cutoffIdx)
+            : [],
     };
 }
 
@@ -723,11 +792,22 @@ const baseLayout = extra => Object.assign({
 function drawCharts(hist) {
     // 總市值走勢（萬元）；Y 軸自動縮放、0 軸不歸零，以易辨識為主
     const valuesWan = hist.totalValue.map(v => v / 10000);
-    Plotly.react("chart-total", [{
+    const traces = [{
         x: hist.dates, y: valuesWan, type: "scatter", mode: "lines",
-        line: {color: "#2f6fed", width: 2}, name: "總市值",
-        hovertemplate: "%{y:,.1f} 萬<extra></extra>",
-    }], baseLayout({
+        line: {color: "#2f6fed", width: 2.2}, name: "目前投資組合總資產",
+        hovertemplate: "目前投組：%{y:,.1f} 萬<extra></extra>",
+    }];
+    if (hist.totalValue2025 && hist.totalValue2025.length) {
+        const values2025Wan = hist.totalValue2025.map(v => v == null ? null : v / 10000);
+        traces.push({
+            x: hist.dates, y: values2025Wan, type: "scatter", mode: "lines",
+            line: {color: "#f59e0b", width: 2}, name: "2025portfolio 總資產",
+            hovertemplate: "2025portfolio：%{y:,.1f} 萬<extra></extra>",
+        });
+    }
+    Plotly.react("chart-total", traces, baseLayout({
+        margin: {l: 62, r: 15, t: 32, b: 40},
+        legend: {orientation: "h", y: 1.12, x: 0, xanchor: "left"},
         yaxis: {gridcolor: "#f0f2f5", fixedrange: true, autorange: true,
                 ticksuffix: " 萬", tickformat: ",.0f"},
     }), {displayModeBar: false, responsive: true});
@@ -776,7 +856,7 @@ let lohasSelected = null;
 let lohasLoaded = false;
 let currentLohasRange = "3Y";
 const LOHAS_WINDOW = 875;         // 回歸與標準差計算窗口（約 3.5 年交易日）
-const LOHAS_DISPLAY_WINDOW = 1260; // 最大顯示窗口（約 5 年交易日）
+const LOHAS_DISPLAY_WINDOW = 875; // 最大顯示窗口（約 3.5 年交易日，供 3Y 瀏覽）
 
 // 用最新即時收盤價更新五線譜的最後一天，並重新回歸整個窗口的 TL/±SD
 // （邏輯對應 portfolio_data.py 的 get_lohas：最近 875 日做一次線性回歸 + 全樣本標準差，並延伸至 5Y 顯示窗口）
@@ -823,7 +903,7 @@ function recomputeLohasBundle(bundle, latestClose, todayDateStr) {
     return {...bundle, chartData, lastDate: chartData[chartData.length - 1].date};
 }
 
-// 依時間軸區間裁切樂活五線譜資料。range: 1D/5D/1M/6M/YTD/1Y/3Y/5Y
+// 依時間軸區間裁切樂活五線譜資料。range: 1D/5D/1M/3M/6M/YTD/1Y/3Y
 function sliceLohasByRange(chartData, range) {
     if (!chartData || !chartData.length) return [];
     const n = chartData.length;
@@ -837,10 +917,10 @@ function sliceLohasByRange(chartData, range) {
             "1D": 2,
             "5D": 5,
             "1M": 21,
+            "3M": 63,
             "6M": 126,
             "1Y": 252,
             "3Y": 756,
-            "5Y": 1260,
         }[range] || n;
         cutoffIdx = Math.max(0, n - days);
     }

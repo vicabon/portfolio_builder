@@ -1,0 +1,15 @@
+[
+  {"ticker": "0052.TW", "name": "富邦科技", "shares": 315000, "beta": 1},
+  {"ticker": "00662.TW", "name": "富邦NASDAQ", "shares": 102000, "beta": 1},
+  {"ticker": "009800.TW", "name": "中信NASDAQ", "shares": 506000, "beta": 1},
+  {"ticker": "00830.TW", "name": "國泰費城半導體", "shares": 16000, "beta": 1.5},
+  {"ticker": "00770.TW", "name": "國泰北美科技", "shares": 49000, "beta": 1},
+  {"ticker": "2330.TW", "name": "台積電", "shares": 3000, "beta": 2},
+  {"ticker": "00757.TW", "name": "統一FANG+", "shares": 10000, "beta": 1.5},
+  {"ticker": "QQQM", "name": "台股複委託 QQQM", "shares": 180, "beta": 1, "market": "TW"},
+  {"ticker": "SOXL", "name": "Direxion Daily Semiconductor Bull 3X Shares", "shares": 1867.5912, "beta": 3},
+  {"ticker": "TQQQ", "name": "ProShares UltraPro QQQ", "shares": 21003.3606, "beta": 3},
+  {"ticker": "QQQ", "name": "Invesco QQQ", "shares": 374.2672, "beta": 1},
+  {"ticker": "QQQM", "name": "Invesco NASDAQ 100 ETF", "shares": 53.4979, "beta": 1},
+  {"ticker": "TWD-CASH", "name": "台幣現金", "shares": 23500000, "type": "cash", "beta": 0}
+]
