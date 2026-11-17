@@ -119,6 +119,9 @@ def _yahoo_history(ticker, start_ts):
         # Yahoo Finance 對 0052.TW（富邦科技 2025-11-17 1拆7）分割前歷史價未自動除權還原，手動除以 7
         if upper_ticker == "0052.TW" and date_str < "2025-11-17" and val > 60:
             val /= 7.0
+        # Yahoo Finance 對 00662.TW（富邦NASDAQ 2026-11-17 1拆5）分割前歷史價未自動除權還原，手動除以 5
+        if upper_ticker == "00662.TW" and date_str < "2026-11-17" and val > 25.8:
+            val /= 5.0
         out[date_str] = val
     return out
 
@@ -265,9 +268,6 @@ def get_history(holdings, start="2020-11-01", holdings_2025=None):
       perTicker:      {ticker: {"value": [...], "weight": [...]}}
       dailyReturns:   [{"date", "value", "ret"}]  總市值每日報酬率
     """
-    import numpy as np  # noqa: F401 (保留給未來擴充)
-    import pandas as pd
-
     shares = _extract_shares_map(holdings)
     shares_2025 = _extract_shares_map(holdings_2025)
     if not shares:
@@ -282,7 +282,7 @@ def get_history(holdings, start="2020-11-01", holdings_2025=None):
             continue  # 現金無需抓歷史，稍後以固定值加入
         hist = _yahoo_history(ticker, start_ts)
         if hist:
-            close_frames[ticker] = pd.Series(hist)
+            close_frames[ticker] = hist
         else:
             print(f"[history] 無歷史資料：{ticker}")
 
@@ -294,78 +294,110 @@ def get_history(holdings, start="2020-11-01", holdings_2025=None):
 
     # 美股需要歷史匯率換算
     need_fx = any(not is_taiwan_ticker(t) for t in close_frames)
-    fx_series = None
-    if need_fx:
-        fx_hist = _yahoo_history("TWD=X", start_ts)
-        if fx_hist:
-            fx_series = pd.Series(fx_hist)
+    fx_hist = _yahoo_history("TWD=X", start_ts) if need_fx else {}
 
-    combined = pd.DataFrame(close_frames)
-    combined.index = pd.to_datetime(combined.index)
-    combined = combined.sort_index().ffill()
+    all_dates = sorted({d for h in close_frames.values() for d in h.keys()})
+    if not all_dates:
+        return _empty_history()
 
-    if fx_series is not None:
-        fx_series.index = pd.to_datetime(fx_series.index)
-        fx_aligned = fx_series.sort_index().reindex(combined.index).ffill().bfill()
-    else:
-        fx_aligned = None
+    combined = {}
+    for ticker, hist in close_frames.items():
+        series = {}
+        last_val = None
+        for d in all_dates:
+            if d in hist and hist[d] is not None:
+                last_val = float(hist[d])
+            series[d] = last_val
+        combined[ticker] = series
 
-    value_frame = pd.DataFrame(index=combined.index)
+    fx_aligned = None
+    if need_fx and fx_hist:
+        fx_aligned = {}
+        last_fx = None
+        for d in all_dates:
+            if d in fx_hist and fx_hist[d] is not None:
+                last_fx = float(fx_hist[d])
+            fx_aligned[d] = last_fx
+        first_fx = next((fx_aligned[d] for d in all_dates if fx_aligned[d] is not None), None)
+        if first_fx is not None:
+            for d in all_dates:
+                if fx_aligned[d] is None:
+                    fx_aligned[d] = first_fx
+                else:
+                    break
+
+    columns = [t for t in shares if not is_cash(t) and t in combined]
+    if cash_total > 0:
+        columns.extend([t for t in shares if is_cash(t)])
+
+    raw_values = {t: {} for t in columns}
     for ticker in shares:
-        if is_cash(ticker) or ticker not in combined.columns:
+        if is_cash(ticker) or ticker not in combined:
             continue
-        price_series = combined[ticker]
-        if not is_taiwan_ticker(ticker) and fx_aligned is not None:
-            price_series = price_series * fx_aligned
-        value_frame[ticker] = price_series * shares[ticker]
+        qty = shares[ticker]
+        is_tw = is_taiwan_ticker(ticker)
+        for d in all_dates:
+            p = combined[ticker][d]
+            if p is None:
+                raw_values[ticker][d] = None
+            else:
+                if not is_tw and fx_aligned is not None and fx_aligned.get(d) is not None:
+                    p = p * fx_aligned[d]
+                raw_values[ticker][d] = p * qty
 
-    # 現金：對每個交易日皆為固定台幣金額
     if cash_total > 0:
         for ticker in shares:
             if is_cash(ticker):
-                value_frame[ticker] = float(shares[ticker])
+                c_val = float(shares[ticker])
+                for d in all_dates:
+                    raw_values[ticker][d] = c_val
 
-    value_frame = value_frame.dropna(how="all").fillna(0.0)
-    total = value_frame.sum(axis=1)
-    valid = total > 0  # 去掉早期尚未全部上市造成的 0 值段落
-    value_frame = value_frame[valid]
-    total = total[valid]
+    valid_dates = []
+    totals = []
+    for d in all_dates:
+        if all(raw_values[t][d] is None for t in columns):
+            continue
+        day_total = sum((raw_values[t][d] or 0.0) for t in columns)
+        if day_total > 0:
+            valid_dates.append(d)
+            totals.append(day_total)
 
-    if value_frame.empty:
+    if not valid_dates:
         return _empty_history()
 
     total_value_2025 = []
     if shares_2025:
-        vf_2025 = pd.DataFrame(index=value_frame.index)
-        for ticker, qty in shares_2025.items():
-            if is_cash(ticker):
-                vf_2025[ticker] = float(qty)
-            elif ticker in combined.columns:
-                ps = combined.loc[value_frame.index, ticker]
-                if not is_taiwan_ticker(ticker) and fx_aligned is not None:
-                    ps = ps * fx_aligned.loc[value_frame.index]
-                vf_2025[ticker] = ps * qty
-        total_2025 = vf_2025.fillna(0.0).sum(axis=1)
-        total_value_2025 = [round(float(v), 2) for v in total_2025]
+        for d in valid_dates:
+            day_2025 = 0.0
+            for ticker, qty in shares_2025.items():
+                if is_cash(ticker):
+                    day_2025 += float(qty)
+                elif ticker in combined:
+                    p = combined[ticker][d]
+                    if p is not None:
+                        if not is_taiwan_ticker(ticker) and fx_aligned is not None and fx_aligned.get(d) is not None:
+                            p = p * fx_aligned[d]
+                        day_2025 += p * qty
+            total_value_2025.append(round(float(day_2025), 2))
 
     per_ticker = {}
-    for ticker in value_frame.columns:
-        values = value_frame[ticker]
-        weights = (values / total * 100).round(2)
+    for ticker in columns:
+        vals = [raw_values[ticker][d] or 0.0 for d in valid_dates]
         per_ticker[ticker] = {
-            "value": [round(float(v), 2) for v in values],
-            "weight": [round(float(w), 2) for w in weights],
+            "value": [round(float(v), 2) for v in vals],
+            "weight": [round(float(v / tot * 100.0), 2) for v, tot in zip(vals, totals)],
         }
 
-    returns = total.pct_change().fillna(0.0) * 100
-    daily_returns = [
-        {"date": d.strftime("%Y-%m-%d"), "value": round(float(v), 2), "ret": round(float(r), 3)}
-        for d, v, r in zip(value_frame.index, total, returns)
-    ]
+    daily_returns = []
+    for i, (d, tot) in enumerate(zip(valid_dates, totals)):
+        ret = 0.0 if i == 0 else (tot - totals[i - 1]) / totals[i - 1] * 100.0
+        daily_returns.append(
+            {"date": d, "value": round(float(tot), 2), "ret": round(float(ret), 3)}
+        )
 
     return {
-        "dates": [d.strftime("%Y-%m-%d") for d in value_frame.index],
-        "totalValue": [round(float(v), 2) for v in total],
+        "dates": valid_dates,
+        "totalValue": [round(float(v), 2) for v in totals],
         "totalValue2025": total_value_2025,
         "holdings2025": [{"ticker": k, "shares": v} for k, v in shares_2025.items()],
         "perTicker": per_ticker,
@@ -397,7 +429,7 @@ def get_lohas(ticker, start="2019-01-01"):
       currencySymbol, lastDate, sentimentDescription,
       chartData: [{date, close, tl, p1sd, p2sd, m1sd, m2sd}]
     """
-    import numpy as np
+    import math
 
     ticker = ticker.strip().upper()
     start_ts = int(time.mktime(time.strptime(start, "%Y-%m-%d")))
@@ -411,18 +443,23 @@ def get_lohas(ticker, start="2019-01-01"):
 
     items = sorted(hist.items())[-_LOHAS_DISPLAY_WINDOW:]
     dates = [d for d, _ in items]
-    closes = np.array([c for _, c in items], dtype=float)
+    closes = [float(c) for _, c in items]
 
     # 以最近 _LOHAS_WINDOW（約 3.5 年）進行線性回歸與標準差計算，並將軌道延伸涵蓋整個顯示區間（5Y）
     reg_closes = closes[-_LOHAS_WINDOW:]
-    reg_x = np.arange(len(reg_closes))
-    slope, intercept = np.polyfit(reg_x, reg_closes, 1)
-    reg_tl = slope * reg_x + intercept
-    sd = float(np.std(reg_closes - reg_tl))
+    n = len(reg_closes)
+    x_mean = (n - 1) / 2.0
+    y_mean = sum(reg_closes) / n
+    num = sum((i - x_mean) * (y - y_mean) for i, y in enumerate(reg_closes))
+    den = sum((i - x_mean) ** 2 for i in range(n))
+    slope = num / den if den else 0.0
+    intercept = y_mean - slope * x_mean
+    residuals = [y - (slope * i + intercept) for i, y in enumerate(reg_closes)]
+    r_mean = sum(residuals) / n
+    sd = math.sqrt(sum((r - r_mean) ** 2 for r in residuals) / n)
 
     offset = len(closes) - len(reg_closes)
-    full_x = np.arange(len(closes)) - offset
-    tl = slope * full_x + intercept
+    tl = [slope * (i - offset) + intercept for i in range(len(closes))]
 
     chart_data = []
     for i, date_str in enumerate(dates):

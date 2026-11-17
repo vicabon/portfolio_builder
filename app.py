@@ -11,7 +11,11 @@
 import json
 import os
 
-from flask import Flask, jsonify, request, send_from_directory
+try:
+    from flask import Flask, jsonify, request, send_from_directory
+except ImportError:  # 供無安裝 Flask 的環境執行 build_static.py
+    Flask = None
+    jsonify = request = send_from_directory = None
 
 import portfolio_data
 
@@ -19,7 +23,13 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PORTFOLIO_FILE = os.path.join(BASE_DIR, "portfolio.json")
 PORTFOLIO_2025_FILE = os.path.join(BASE_DIR, "2025portfolio.json")
 
-app = Flask(__name__, static_folder=None)
+
+class _DummyApp:
+    def route(self, *_args, **_kwargs):
+        return lambda fn: fn
+
+
+app = Flask(__name__, static_folder=None) if Flask is not None else _DummyApp()
 
 
 def load_holdings():
