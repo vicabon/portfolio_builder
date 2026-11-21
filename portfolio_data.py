@@ -423,11 +423,11 @@ _LOHAS_DISPLAY_WINDOW = 875  # 約 3.5 年交易日（供前端 3Y 瀏覽）
 
 
 def get_lohas(ticker, start="2019-01-01"):
-    """樂活五線譜：線性回歸中軸 TL 與 ±1SD/±2SD 通道。
+    """樂活五線譜：線性回歸中軸 TL 與 ±1SD/±2SD 及 -3SD/-4SD 通道。
 
     回傳：
       currencySymbol, lastDate, sentimentDescription,
-      chartData: [{date, close, tl, p1sd, p2sd, m1sd, m2sd}]
+      chartData: [{date, close, tl, p1sd, p2sd, m1sd, m2sd, m3sd, m4sd}]
     """
     import math
 
@@ -472,6 +472,8 @@ def get_lohas(ticker, start="2019-01-01"):
                 "p2sd": round(float(tl[i] + 2 * sd), 2),
                 "m1sd": round(float(tl[i] - sd), 2),
                 "m2sd": round(float(tl[i] - 2 * sd), 2),
+                "m3sd": round(float(tl[i] - 3 * sd), 2),
+                "m4sd": round(float(tl[i] - 4 * sd), 2),
             }
         )
 
@@ -534,22 +536,38 @@ def gauge_color(score):
 # ------------------------------------------------------------ 市場指標 (VIX & Nasdaq100 Forward PE)
 
 _DOLLARLIQUIDITY_URL = "https://dollarliquidity.com/en/valuation/nasdaq-100-forward-pe"
+_DOLLARLIQUIDITY_OVERVIEW_URL = "https://dollarliquidity.com/en/valuation"
 
 
 def get_vix():
-    """取得 CBOE VIX 波動率指數最新報價與日期。"""
+    """取得 CBOE VIX 波動率指數最新報價與前一個交易日收盤價（Yahoo Finance Chart API）。"""
     result = _yahoo_chart("%5EVIX", rng="5d")
     if not result:
-        return {"value": None, "date": None}
+        return {"value": None, "previousValue": None, "date": None}
     meta = result.get("meta") or {}
+    timestamps = result.get("timestamp") or []
+    raw_closes = (((result.get("indicators") or {}).get("quote") or [{}])[0]).get("close") or []
+    bars = [
+        (time.strftime("%Y-%m-%d", time.gmtime(ts)), _to_float(c))
+        for ts, c in zip(timestamps, raw_closes)
+        if _to_float(c) is not None
+    ]
     price = _to_float(meta.get("regularMarketPrice"))
-    if price is None:
-        closes = (((result.get("indicators") or {}).get("quote") or [{}])[0]).get("close") or []
-        closes = [c for c in closes if c is not None]
-        price = _to_float(closes[-1]) if closes else None
-    prev = _to_float(meta.get("chartPreviousClose") or meta.get("previousClose"))
+    if price is None and bars:
+        price = bars[-1][1]
     ts = meta.get("regularMarketTime")
-    date_str = time.strftime("%Y-%m-%d", time.gmtime(ts)) if ts else None
+    date_str = time.strftime("%Y-%m-%d", time.gmtime(ts)) if ts else (bars[-1][0] if bars else None)
+
+    # meta.chartPreviousClose 在 range=5d 時為 5 日前收盤價，優先取 previousClose 或前一日日線收盤價
+    prev = _to_float(meta.get("previousClose"))
+    if prev is None and bars:
+        if date_str and bars[-1][0] == date_str:
+            prev = bars[-2][1] if len(bars) >= 2 else None
+        else:
+            prev = bars[-1][1]
+    if prev is None:
+        prev = _to_float(meta.get("chartPreviousClose"))
+
     return {
         "value": round(price, 2) if price is not None else None,
         "previousValue": round(prev, 2) if prev is not None else None,
@@ -557,22 +575,64 @@ def get_vix():
     }
 
 
+def _parse_dollarliquidity_overview(html_text):
+    """從 DollarLiquidity /en/valuation 總覽頁（較輕量）解析 Nasdaq-100 Forward P/E。"""
+    from datetime import datetime
+
+    plain = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", html_text))
+    match = re.search(
+        r"Nasdaq-100 Forward P/E\s+(\d+(?:\.\d+)?)\s*[×x].{0,400}?"
+        r"As of\s+([A-Z][a-z]{2}\s+\d{1,2},\s+\d{4})\s*([+−-]?\d+(?:\.\d+)?)",
+        plain,
+    )
+    if not match:
+        return None
+    val = round(float(match.group(1)), 2)
+    chg = round(float(match.group(3).replace("−", "-")), 2)
+    date_str = datetime.strptime(match.group(2), "%b %d, %Y").strftime("%Y-%m-%d")
+    return {
+        "value": val,
+        "date": date_str,
+        "previousValue": round(val - chg, 2),
+        "previousDate": None,
+        "change": chg,
+        "url": _DOLLARLIQUIDITY_URL,
+        "source": "DollarLiquidity",
+    }
+
+
 def get_nasdaq100_forward_pe_dollarliquidity():
-    """從 DollarLiquidity.com 取得 Nasdaq-100 Forward P/E Ratio 最新統計數值與前值。"""
+    """從 DollarLiquidity.com 取得 Nasdaq-100 Forward P/E Ratio 最新統計數值與前值。
+
+    優先抓取較輕量的 /en/valuation 總覽頁（約少 30% 傳輸量）並帶時間戳參數避開
+    Cloudflare CDN 6 小時邊緣快取；若總覽頁版面變動則自動退回明細頁解析。
+    """
+    cache_headers = {**_HEADERS, "Cache-Control": "no-cache", "Pragma": "no-cache"}
     try:
-        # DollarLiquidity 走 Cloudflare CDN（s-maxage=6h + stale-while-revalidate），
-        # 直接抓可能拿到舊的邊緣快取；加時間戳 query 讓 CDN 視為新網址而回源。
+        resp_ov = requests.get(
+            _DOLLARLIQUIDITY_OVERVIEW_URL,
+            params={"_": int(time.time())},
+            headers=cache_headers,
+            timeout=15,
+        )
+        resp_ov.raise_for_status()
+        parsed = _parse_dollarliquidity_overview(resp_ov.text)
+        if parsed:
+            return parsed
+    except Exception as error:
+        print(f"[pe] DollarLiquidity 總覽頁取得失敗，改用明細頁：{error}")
+
+    try:
+        # 備援：明細頁（同樣帶時間戳避開 Cloudflare CDN 快取）
         resp = requests.get(
             _DOLLARLIQUIDITY_URL,
             params={"_": int(time.time())},
-            headers={**_HEADERS, "Cache-Control": "no-cache", "Pragma": "no-cache"},
+            headers=cache_headers,
             timeout=15,
         )
         resp.raise_for_status()
         text = resp.text
 
-        # 解析序列中的最後兩筆（取得最新值與前值）
-        # 格式：...{\"date\":\"2026-10-29\",\"pe\":20.17,...},{\"date\":\"2026-10-30\",\"pe\":19.48,...}],\"historyPoints\"
         prev_val = None
         prev_date = None
         hp_idx = text.find("historyPoints")
@@ -586,7 +646,6 @@ def get_nasdaq100_forward_pe_dollarliquidity():
                 prev_date, prev_pe_str = pairs[-2]
                 prev_val = round(float(prev_pe_str), 2)
 
-        # 優先匹配 <title>Nasdaq-100 Forward P/E Ratio Today: 19.48× (2026-10-30)</title>
         match = re.search(
             r"Forward P/E Ratio Today:\s*([\d.]+)\s*[×x]?\s*\((\d{4}-\d{2}-\d{2})\)",
             text,
@@ -603,7 +662,6 @@ def get_nasdaq100_forward_pe_dollarliquidity():
                 "url": _DOLLARLIQUIDITY_URL,
                 "source": "DollarLiquidity",
             }
-        # 備援匹配 JSON-LD PropertyValue
         match_val = re.search(
             r'"name"\s*:\s*"Forward P/E"\s*,\s*"unitText"\s*:\s*"ratio"\s*,\s*"value"\s*:\s*([\d.]+)',
             text,
@@ -634,10 +692,15 @@ def get_nasdaq100_forward_pe_dollarliquidity():
 
 
 def get_market_indicators():
-    """整合 VIX 與 DollarLiquidity 的 Nasdaq 100 Forward P/E Ratio。"""
-    return {
-        "vix": get_vix(),
-        "nasdaq100ForwardPe": {
-            "dollarliquidity": get_nasdaq100_forward_pe_dollarliquidity(),
-        },
-    }
+    """並行抓取 VIX 與 DollarLiquidity 的 Nasdaq 100 Forward P/E Ratio，縮短等待時間。"""
+    from concurrent.futures import ThreadPoolExecutor
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        f_vix = pool.submit(get_vix)
+        f_pe = pool.submit(get_nasdaq100_forward_pe_dollarliquidity)
+        return {
+            "vix": f_vix.result(),
+            "nasdaq100ForwardPe": {
+                "dollarliquidity": f_pe.result(),
+            },
+        }

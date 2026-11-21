@@ -64,7 +64,7 @@ def main():
 
     print(f"已產生 {OUTPUT}")
     print(f"  總資產：NT${portfolio['totalValue']:,.0f}")
-    print(f"  加權 Beta：{portfolio['portfolioBeta']}")
+    print(f"  加權 Beta：{portfolio['portfolioBeta']:.4f}")
     print(f"  歷史區間：{history['dates'][0]} ~ {history['dates'][-1]}"
           if history["dates"] else "  （無歷史資料）")
     print(f"  資料時間：{generated_at}")

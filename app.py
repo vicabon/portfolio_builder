@@ -180,6 +180,7 @@ def build_portfolio(holdings):
 
     portfolio_beta = 0.0
     breakdown = {"us": 0.0, "tw": 0.0, "cash": 0.0}
+    beta_buckets = {"index": 0.0, "leveraged": 0.0, "cash": 0.0}
     for position in positions:
         if position["value"] and total > 0:
             position["weight"] = round(position["value"] / total * 100, 2)
@@ -195,17 +196,31 @@ def build_portfolio(holdings):
             else:
                 breakdown["us"] += position["value"]
 
+            # 總資產依 Beta 分類：Beta=0(現金)、Beta=1/1.5(原型指數)、Beta>=2(槓桿指數)
+            b = position["beta"]
+            if position["isCash"] or b == 0:
+                beta_buckets["cash"] += position["value"]
+            elif b is not None and b >= 2:
+                beta_buckets["leveraged"] += position["value"]
+            else:
+                beta_buckets["index"] += position["value"]
+
     positions.sort(key=lambda p: p["value"] or 0, reverse=True)
     fx_rate = portfolio_data.get_usd_twd_rate()
     total_usd = round(total / fx_rate, 2) if fx_rate else None
+    beta_allocation = {
+        k: round((v / total * 100), 2) if total > 0 else 0.0
+        for k, v in beta_buckets.items()
+    }
     return {
         "positions": positions,
         "totalValue": round(total, 2),
         "totalValueUsd": total_usd,
         "fxRate": fx_rate,
-        "portfolioBeta": round(portfolio_beta, 3),
+        "portfolioBeta": round(portfolio_beta, 4),
         "breakdown": {k: round(v, 2) for k, v in breakdown.items()},
         "breakdownUsd": {k: round(v / fx_rate, 2) for k, v in breakdown.items()} if fx_rate else None,
+        "betaAllocation": beta_allocation,
     }
 
 

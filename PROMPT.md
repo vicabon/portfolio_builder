@@ -287,3 +287,33 @@ git add/commit並push上去
 ```
 
 
+## 2026-11-21 21:39:38+08:00
+```text
+git pull最新的程式碼
+```
+
+
+## 2026-11-21 21:59:27+08:00
+```text
+根據 https://agomigit.github.io/5lines_3p5y/ 設計的
+"CBOE VIX 波動指數 （Yahoo · CBOE）"
+"Nasdaq 100 Forward P/E （Dollar Liquidity）"
+
+研究是否會比我們github上現有取得資料的方式更迅速且即時 或是有更迅速且即時方式 請採用最迅速且即時的方式
+
+實作"樂活五線譜趨勢圖"同樣的"死亡加碼悲觀線(-3SD)"和"刪除app不看盤線(-4SD)"
+
+"投組加權 Beta"計算到小數點下第四位
+
+總資產區分Beta=1+1.5為原型指數, Beta=2為槓桿指數, Beta=0為現金 在"投資組合"中顯示原型指數:槓桿指數:現金的%比例
+
+先不要git add和commit
+```
+
+
+## 2026-11-21 22:11:17+08:00
+```text
+非常好 可以git add/commit並push
+```
+
+

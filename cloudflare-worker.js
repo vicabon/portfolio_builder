@@ -61,6 +61,10 @@ export default {
     if (targetUrl.hostname === "mis.twse.com.tw") {
       upstreamHeaders["Referer"] = "https://mis.twse.com.tw/stock/index.jsp";
     }
+    if (targetUrl.hostname === "dollarliquidity.com") {
+      upstreamHeaders["Cache-Control"] = "no-cache";
+      upstreamHeaders["Pragma"] = "no-cache";
+    }
     const upstream = await fetch(targetUrl.toString(), { headers: upstreamHeaders });
 
     const body = await upstream.text();
@@ -68,6 +72,7 @@ export default {
       status: upstream.status,
       headers: {
         "Content-Type": upstream.headers.get("Content-Type") || "application/json",
+        "Cache-Control": "no-store",
         ...CORS_HEADERS,
       },
     });

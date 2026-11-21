@@ -167,6 +167,7 @@
             <div class="stat">
                 <div class="label">投組加權 Beta</div>
                 <div class="value" id="beta-value">—</div>
+                <div class="stat-breakdown" id="beta-breakdown"></div>
             </div>
             <div class="stat">
                 <div class="label">USD / TWD 匯率</div>
@@ -520,13 +521,18 @@ async function refreshLivePortfolio() {
     positions.forEach(p => { if (p.value) total += p.value; });
     let portfolioBeta = 0;
     const breakdown = {us: 0, tw: 0, cash: 0};
+    const betaBuckets = {index: 0, leveraged: 0, cash: 0};
     positions.forEach(p => {
         p.weight = (p.value && total > 0) ? Math.round((p.value / total) * 10000) / 100 : 0;
-        if (p.beta != null) portfolioBeta += (p.value / total) * p.beta;
+        if (p.beta != null && total > 0) portfolioBeta += (p.value / total) * p.beta;
         if (p.value) {
             if (p.isCash) breakdown.cash += p.value;
             else if (p.isTaiwan) breakdown.tw += p.value;
             else breakdown.us += p.value;
+
+            if (p.isCash || p.beta === 0) betaBuckets.cash += p.value;
+            else if (p.beta != null && p.beta >= 2) betaBuckets.leveraged += p.value;
+            else betaBuckets.index += p.value;
         }
     });
     positions.sort((a, b) => (b.value || 0) - (a.value || 0));
@@ -538,13 +544,18 @@ async function refreshLivePortfolio() {
         totalValue: totalTwd,
         totalValueUsd: totalUsd,
         fxRate,
-        portfolioBeta: Math.round(portfolioBeta * 1000) / 1000,
+        portfolioBeta: Math.round(portfolioBeta * 10000) / 10000,
         breakdown: {us: Math.round(breakdown.us * 100) / 100, tw: Math.round(breakdown.tw * 100) / 100, cash: Math.round(breakdown.cash * 100) / 100},
         breakdownUsd: fxRate ? {
             us: Math.round((breakdown.us / fxRate) * 100) / 100,
             tw: Math.round((breakdown.tw / fxRate) * 100) / 100,
             cash: Math.round((breakdown.cash / fxRate) * 100) / 100,
         } : null,
+        betaAllocation: total > 0 ? {
+            index: Math.round((betaBuckets.index / total) * 10000) / 100,
+            leveraged: Math.round((betaBuckets.leveraged / total) * 10000) / 100,
+            cash: Math.round((betaBuckets.cash / total) * 10000) / 100,
+        } : {index: 0, leveraged: 0, cash: 0},
     };
     renderPortfolio(livePortfolio);
 
@@ -624,8 +635,36 @@ function renderPortfolio(data) {
     const totalUsd = data.totalValueUsd != null ? data.totalValueUsd : (fx && data.totalValue != null ? data.totalValue / fx : null);
     const totalUsdEl = document.getElementById("total-usd-value");
     if (totalUsdEl) totalUsdEl.textContent = fmtUSD(totalUsd);
-    document.getElementById("beta-value").textContent = data.portfolioBeta != null ? Number(data.portfolioBeta).toFixed(2) : "—";
+    document.getElementById("beta-value").textContent = data.portfolioBeta != null ? Number(data.portfolioBeta).toFixed(4) : "—";
     document.getElementById("fx-value").textContent = data.fxRate ? Number(data.fxRate).toFixed(3) : "—";
+
+    const betaBreakdownEl = document.getElementById("beta-breakdown");
+    if (betaBreakdownEl) {
+        let ba = data.betaAllocation;
+        if (!ba && data.positions && data.positions.length && data.totalValue > 0) {
+            const buckets = {index: 0, leveraged: 0, cash: 0};
+            data.positions.forEach(p => {
+                if (!p.value) return;
+                if (p.isCash || p.beta === 0) buckets.cash += p.value;
+                else if (p.beta != null && p.beta >= 2) buckets.leveraged += p.value;
+                else buckets.index += p.value;
+            });
+            ba = {
+                index: Math.round((buckets.index / data.totalValue) * 10000) / 100,
+                leveraged: Math.round((buckets.leveraged / data.totalValue) * 10000) / 100,
+                cash: Math.round((buckets.cash / data.totalValue) * 10000) / 100,
+            };
+        }
+        if (ba) {
+            betaBreakdownEl.innerHTML = `
+                <div><span class="k">原型:槓桿:現金：</span><span class="v">${Number(ba.index).toFixed(1)}% : ${Number(ba.leveraged).toFixed(1)}% : ${Number(ba.cash).toFixed(1)}%</span></div>
+                <div><span class="k">原型指數 (β 1/1.5)：</span><span class="v">${Number(ba.index).toFixed(2)}%</span></div>
+                <div><span class="k">槓桿指數 (β 2+)：</span><span class="v">${Number(ba.leveraged).toFixed(2)}%</span></div>
+                <div><span class="k">現金 (β 0)：</span><span class="v">${Number(ba.cash).toFixed(2)}%</span></div>`;
+        } else {
+            betaBreakdownEl.innerHTML = "";
+        }
+    }
 
     const bd = data.breakdown || {};
     const breakdownEl = document.getElementById("total-breakdown");
@@ -887,6 +926,8 @@ function recomputeLohasBundle(bundle, latestClose, todayDateStr) {
             p2sd: Math.round((tlVal + 2 * sd) * 100) / 100,
             m1sd: Math.round((tlVal - sd) * 100) / 100,
             m2sd: Math.round((tlVal - 2 * sd) * 100) / 100,
+            m3sd: Math.round((tlVal - 3 * sd) * 100) / 100,
+            m4sd: Math.round((tlVal - 4 * sd) * 100) / 100,
         };
     });
     return {...bundle, chartData, lastDate: chartData[chartData.length - 1].date};
@@ -1082,13 +1123,15 @@ function getPeTierInfo(v) {
     return {key: "very-expensive", label: "非常昂貴", range: "30～35 倍以上", color: "#059669", bg: "#ecfdf5"};
 }
 
-// 樂活五線譜五條通道顏色（對應 CNN Fear & Greed 即時量表五色：極悲觀→極度恐懼 #cc0000 ... 極樂觀→極度貪婪 #008800）
+// 樂活五線譜通道顏色（對應 CNN Fear & Greed 即時量表五色 + -3SD/-4SD 極端悲觀延伸軌道）
 const LOHAS_BAND_COLORS = {
     p2sd: "#008800", // 極樂觀 (+2SD) <-> 極度貪婪 (Extreme Greed)
     p1sd: "#66cc00", // 相對樂觀 (+1SD) <-> 貪婪 (Greed)
     tl:   "#888888", // 趨勢中軸 (TL) <-> 中性 (Neutral)
     m1sd: "#ff9900", // 相對悲觀 (-1SD) <-> 恐懼 (Fear)
     m2sd: "#cc0000", // 極悲觀 (-2SD) <-> 極度恐懼 (Extreme Fear)
+    m3sd: "#7f1d1d", // 死亡加碼悲觀線 (-3SD)
+    m4sd: "#4c1d95", // 刪除app不看盤線 (-4SD)
 };
 
 // 根據最新股價落入五線譜的哪個區段，回傳對應的五線譜虛線顏色與區間數值範圍標籤
@@ -1098,11 +1141,15 @@ function getLohasPriceZone(row, currencySymbol = "") {
     }
     const c = Number(row.close);
     const f = v => currencySymbol + Number(v).toFixed(2);
+    const m3 = row.m3sd != null ? Number(row.m3sd) : (row.tl != null && row.m1sd != null ? row.tl - 3 * (row.tl - row.m1sd) : null);
+    const m4 = row.m4sd != null ? Number(row.m4sd) : (row.tl != null && row.m1sd != null ? row.tl - 4 * (row.tl - row.m1sd) : null);
     // 1. 落入「極樂觀 (+2SD)」值以上 -> 極樂觀顏色 (#008800)
     // 2. 落入「相對樂觀 (+1SD)」與「極樂觀 (+2SD)」值之間 -> 相對樂觀顏色 (#66cc00)
     // 3. 落入「相對悲觀 (-1SD)」與「相對樂觀 (+1SD)」值之間 -> 趨勢中軸顏色 (#888888)
     // 4. 落入「極悲觀 (-2SD)」與「相對悲觀 (-1SD)」值之間 -> 相對悲觀顏色 (#ff9900)
-    // 5. 落入「極悲觀 (-2SD)」值以下 -> 極悲觀顏色 (#cc0000)
+    // 5. 落入「死亡加碼悲觀線 (-3SD)」與「極悲觀 (-2SD)」值之間 -> 極悲觀顏色 (#cc0000)
+    // 6. 落入「刪除app不看盤線 (-4SD)」與「死亡加碼悲觀線 (-3SD)」值之間 -> 死亡加碼悲觀顏色 (#7f1d1d)
+    // 7. 落入「刪除app不看盤線 (-4SD)」值以下 -> 刪除app不看盤顏色 (#4c1d95)
     if (c >= row.p2sd) {
         const range = `≥ ${f(row.p2sd)}`;
         return {color: LOHAS_BAND_COLORS.p2sd, bg: "#e3f7e8", range, label: `極樂觀區（${range}）`};
@@ -1118,6 +1165,18 @@ function getLohasPriceZone(row, currencySymbol = "") {
     if (c > row.m2sd) {
         const range = `${f(row.m2sd)}～${f(row.m1sd)}`;
         return {color: LOHAS_BAND_COLORS.m1sd, bg: "#fff4e5", range, label: `相對悲觀區（${range}）`};
+    }
+    if (m3 != null && c > m3) {
+        const range = `${f(m3)}～${f(row.m2sd)}`;
+        return {color: LOHAS_BAND_COLORS.m2sd, bg: "#fde8e8", range, label: `極悲觀區（${range}）`};
+    }
+    if (m4 != null && c > m4) {
+        const range = `${f(m4)}～${f(m3)}`;
+        return {color: LOHAS_BAND_COLORS.m3sd, bg: "#fee2e2", range, label: `死亡加碼悲觀區（${range}）`};
+    }
+    if (m4 != null) {
+        const range = `≤ ${f(m4)}`;
+        return {color: LOHAS_BAND_COLORS.m4sd, bg: "#f3e8ff", range, label: `刪除app不看盤區（${range}）`};
     }
     const range = `≤ ${f(row.m2sd)}`;
     return {color: LOHAS_BAND_COLORS.m2sd, bg: "#fde8e8", range, label: `極悲觀區（${range}）`};
@@ -1200,35 +1259,92 @@ function renderMarketIndicators(ind) {
     }
 }
 
+function parseDollarLiquidityOverviewHtml(html) {
+    const plain = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+    const m = plain.match(/Nasdaq-100 Forward P\/E\s+(\d+(?:\.\d+)?)\s*[×x].{0,400}?As of\s+([A-Z][a-z]{2}\s+\d{1,2},\s+\d{4})\s*([+−-]?\d+(?:\.\d+)?)/);
+    if (!m) return null;
+    const val = Math.round(parseFloat(m[1]) * 100) / 100;
+    const chg = Math.round(parseFloat(m[3].replace("−", "-")) * 100) / 100;
+    const months = {Jan:"01",Feb:"02",Mar:"03",Apr:"04",May:"05",Jun:"06",Jul:"07",Aug:"08",Sep:"09",Oct:"10",Nov:"11",Dec:"12"};
+    const dm = m[2].match(/^([A-Z][a-z]{2})\s+(\d{1,2}),\s+(\d{4})$/);
+    const dateStr = dm ? `${dm[3]}-${months[dm[1]] || "01"}-${String(dm[2]).padStart(2, "0")}` : null;
+    return {
+        value: val,
+        date: dateStr,
+        change: chg,
+        previousValue: Math.round((val - chg) * 100) / 100,
+    };
+}
+
 async function refreshLiveMarketIndicators() {
     if (!STATIC || !WORKER_BASE_URL) return;
     const next = JSON.parse(JSON.stringify(marketIndicators || {vix: {}, nasdaq100ForwardPe: {dollarliquidity: {}}}));
-    try {
-        const vixUrl = "https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?range=5d&interval=1d";
-        const rVix = await fetch(proxied(vixUrl));
-        if (rVix.ok) {
+
+    const fetchVixTask = (async () => {
+        try {
+            const vixUrl = "https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?range=5d&interval=1d";
+            const rVix = await fetch(proxied(vixUrl));
+            if (!rVix.ok) return;
             const j = await rVix.json();
-            const meta = j.chart.result[0].meta;
-            if (meta && meta.regularMarketPrice != null) {
-                next.vix.value = Math.round(meta.regularMarketPrice * 100) / 100;
-                if (meta.chartPreviousClose != null || meta.previousClose != null) {
-                    next.vix.previousValue = Math.round((meta.chartPreviousClose ?? meta.previousClose) * 100) / 100;
-                }
-                if (meta.regularMarketTime) {
-                    next.vix.date = new Date(meta.regularMarketTime * 1000).toISOString().slice(0, 10);
+            const res = j.chart && j.chart.result && j.chart.result[0];
+            if (!res) return;
+            const meta = res.meta || {};
+            const tsList = res.timestamp || [];
+            const closeList = (((res.indicators || {}).quote || [{}])[0]).close || [];
+            const bars = [];
+            for (let i = 0; i < Math.min(tsList.length, closeList.length); i++) {
+                if (closeList[i] != null) {
+                    bars.push({date: new Date(tsList[i] * 1000).toISOString().slice(0, 10), close: closeList[i]});
                 }
             }
+            const price = meta.regularMarketPrice != null ? meta.regularMarketPrice : (bars.length ? bars[bars.length - 1].close : null);
+            if (price != null) {
+                next.vix.value = Math.round(price * 100) / 100;
+                const dateStr = meta.regularMarketTime
+                    ? new Date(meta.regularMarketTime * 1000).toISOString().slice(0, 10)
+                    : (bars.length ? bars[bars.length - 1].date : null);
+                if (dateStr) next.vix.date = dateStr;
+
+                // 優先取 meta.previousClose 或前一個交易日收盤價（避免使用 5 日前的 chartPreviousClose）
+                let prev = meta.previousClose != null ? meta.previousClose : null;
+                if (prev == null && bars.length) {
+                    if (dateStr && bars[bars.length - 1].date === dateStr) {
+                        prev = bars.length >= 2 ? bars[bars.length - 2].close : null;
+                    } else {
+                        prev = bars[bars.length - 1].close;
+                    }
+                }
+                if (prev == null && meta.chartPreviousClose != null) prev = meta.chartPreviousClose;
+                if (prev != null) next.vix.previousValue = Math.round(prev * 100) / 100;
+                marketIndicators = next;
+                renderMarketIndicators(marketIndicators);
+            }
+        } catch (e) {
+            console.warn("VIX 即時更新失敗，維持快照", e);
         }
-    } catch (e) {
-        console.warn("VIX 即時更新失敗，維持快照", e);
-    }
-    try {
-        const dlUrl = "https://dollarliquidity.com/en/valuation/nasdaq-100-forward-pe";
-        // 加時間戳避開 DollarLiquidity 的 Cloudflare 邊緣快取（s-maxage=6h），確保拿到最新數據
-        const rDl = await fetch(proxied(dlUrl + "?_=" + Date.now()), {cache: "no-store"});
-        if (!rDl.ok) {
-            console.warn(`DollarLiquidity PE 即時更新 HTTP ${rDl.status}（請確認 cloudflare-worker.js 已更新部署至 Cloudflare Workers 白名單）`);
-        } else {
+    })();
+
+    const fetchPeTask = (async () => {
+        try {
+            // 優先抓較輕量的 /en/valuation 總覽頁（比明細頁少 ~30% 傳輸量），並加時間戳避開 Cloudflare CDN 快取
+            const ovUrl = "https://dollarliquidity.com/en/valuation?_=" + Date.now();
+            const rOv = await fetch(proxied(ovUrl), {cache: "no-store"});
+            if (rOv.ok) {
+                const parsed = parseDollarLiquidityOverviewHtml(await rOv.text());
+                if (parsed) {
+                    Object.assign(next.nasdaq100ForwardPe.dollarliquidity, parsed);
+                    marketIndicators = next;
+                    renderMarketIndicators(marketIndicators);
+                    return;
+                }
+            }
+            // 備援：抓明細頁
+            const dlUrl = "https://dollarliquidity.com/en/valuation/nasdaq-100-forward-pe?_=" + Date.now();
+            const rDl = await fetch(proxied(dlUrl), {cache: "no-store"});
+            if (!rDl.ok) {
+                console.warn(`DollarLiquidity PE 即時更新 HTTP ${rDl.status}（請確認 cloudflare-worker.js 已更新部署至 Cloudflare Workers 白名單）`);
+                return;
+            }
             const html = await rDl.text();
             const hpIdx = html.indexOf("historyPoints");
             if (hpIdx > 0) {
@@ -1255,18 +1371,22 @@ async function refreshLiveMarketIndicators() {
             if (curVal != null && pv != null) {
                 next.nasdaq100ForwardPe.dollarliquidity.change = Math.round((curVal - pv) * 100) / 100;
             }
+            marketIndicators = next;
+            renderMarketIndicators(marketIndicators);
+        } catch (e) {
+            console.warn("DollarLiquidity PE 即時更新失敗，維持快照", e);
         }
-    } catch (e) {
-        console.warn("DollarLiquidity PE 即時更新失敗，維持快照", e);
-    }
-    marketIndicators = next;
-    renderMarketIndicators(marketIndicators);
+    })();
+
+    await Promise.all([fetchVixTask, fetchPeTask]);
 }
 
 function renderLohasSidebar(bundle, row) {
     const c = bundle.currencySymbol;
     const f = v => c + Number(v).toFixed(2);
     const z = getLohasPriceZone(row, c);
+    const m3 = row.m3sd != null ? row.m3sd : (row.tl - 3 * (row.tl - row.m1sd));
+    const m4 = row.m4sd != null ? row.m4sd : (row.tl - 4 * (row.tl - row.m1sd));
     document.getElementById("lohas-sidebar").innerHTML = `
         <h3 class="sidebar-title">📈 歷史數據細節（📅 ${row.date}）</h3>
         <div class="price-box">
@@ -1279,6 +1399,8 @@ function renderLohasSidebar(bundle, row) {
             <li style="border-left-color:${LOHAS_BAND_COLORS.tl};"><span class="line-name" style="color:${LOHAS_BAND_COLORS.tl};font-weight:700;">趨勢中軸 (TL)</span><span class="line-val" style="color:${LOHAS_BAND_COLORS.tl};">${f(row.tl)}</span></li>
             <li style="border-left-color:${LOHAS_BAND_COLORS.m1sd};"><span class="line-name" style="color:${LOHAS_BAND_COLORS.m1sd};font-weight:700;">相對悲觀 (-1SD)</span><span class="line-val" style="color:${LOHAS_BAND_COLORS.m1sd};">${f(row.m1sd)}</span></li>
             <li style="border-left-color:${LOHAS_BAND_COLORS.m2sd};"><span class="line-name" style="color:${LOHAS_BAND_COLORS.m2sd};font-weight:700;">極悲觀線 (-2SD)</span><span class="line-val" style="color:${LOHAS_BAND_COLORS.m2sd};">${f(row.m2sd)}</span></li>
+            <li style="border-left-color:${LOHAS_BAND_COLORS.m3sd};"><span class="line-name" style="color:${LOHAS_BAND_COLORS.m3sd};font-weight:700;">死亡加碼悲觀線 (-3SD)</span><span class="line-val" style="color:${LOHAS_BAND_COLORS.m3sd};">${f(m3)}</span></li>
+            <li style="border-left-color:${LOHAS_BAND_COLORS.m4sd};"><span class="line-name" style="color:${LOHAS_BAND_COLORS.m4sd};font-weight:700;">刪除app不看盤線 (-4SD)</span><span class="line-val" style="color:${LOHAS_BAND_COLORS.m4sd};">${f(m4)}</span></li>
         </ul>`;
 }
 
@@ -1323,6 +1445,8 @@ function renderLohas(ticker) {
         {x: dates, y: data.map(r => r.tl), name: "趨勢中軸 (TL)", type: "scatter", line: {color: LOHAS_BAND_COLORS.tl, width: 2, dash: "dash"}},
         {x: dates, y: data.map(r => r.m1sd), name: "相對悲觀 (-1SD)", type: "scatter", line: {color: LOHAS_BAND_COLORS.m1sd, width: 1.5, dash: "dash"}},
         {x: dates, y: data.map(r => r.m2sd), name: "極悲觀 (-2SD)", type: "scatter", line: {color: LOHAS_BAND_COLORS.m2sd, width: 1.5, dash: "dash"}},
+        {x: dates, y: data.map(r => r.m3sd != null ? r.m3sd : (r.tl - 3 * (r.tl - r.m1sd))), name: "死亡加碼悲觀線 (-3SD)", type: "scatter", line: {color: LOHAS_BAND_COLORS.m3sd, width: 1.5, dash: "dashdot"}},
+        {x: dates, y: data.map(r => r.m4sd != null ? r.m4sd : (r.tl - 4 * (r.tl - r.m1sd))), name: "刪除app不看盤線 (-4SD)", type: "scatter", line: {color: LOHAS_BAND_COLORS.m4sd, width: 1.5, dash: "dot"}},
     ];
     const layout = {
         margin: {r: 10, l: 55, t: 10, b: 30}, height: 420,
@@ -1365,27 +1489,45 @@ async function loadLohas() {
         lohasCache = bundle.charts || {};
         fearGreed = bundle.fearGreed || {score: 50, rating: "資料暫缺"};
         marketIndicators = bundle.marketIndicators || null;
+
+        // 先立即呈現靜態快照，避免等待網路造成畫面空白
+        const baseTickers = (STATIC.lohas && STATIC.lohas.tickers) || Object.keys(lohasCache);
+        const tickers = [...new Set([...baseTickers, ...EXTRA_LOHAS_TICKERS])].sort();
+        select.innerHTML = tickers.map(t => `<option value="${t}">${t}</option>`).join("");
+        select.onchange = e => renderLohas(e.target.value);
+        renderGauge(fearGreed);
         renderMarketIndicators(marketIndicators);
-        // CNN Fear & Greed 允許瀏覽器跨網域直接呼叫，不需代理即可即時更新
-        try {
-            const r = await fetch("https://production.dataviz.cnn.io/index/fearandgreed/graphdata");
-            const j = await r.json();
-            const fg = j.fear_and_greed || {};
-            if (fg.score != null) {
-                fearGreed = {
-                    score: Math.round(fg.score * 10) / 10,
-                    rating: String(fg.rating || "").toUpperCase(),
-                    timestamp: fg.timestamp || fearGreed.timestamp,
-                    previousClose: fg.previous_close != null ? Math.round(fg.previous_close * 10) / 10 : fearGreed.previousClose,
-                    previous1Week: fg.previous_1_week != null ? Math.round(fg.previous_1_week * 10) / 10 : fearGreed.previous1Week,
-                    previous1Month: fg.previous_1_month != null ? Math.round(fg.previous_1_month * 10) / 10 : fearGreed.previous1Month,
-                    previous1Year: fg.previous_1_year != null ? Math.round(fg.previous_1_year * 10) / 10 : fearGreed.previous1Year,
-                };
-            }
-        } catch (e) {
-            console.warn("Fear & Greed 即時更新失敗，使用快照值", e);
+        if (tickers.length) {
+            const first = pickDefault(tickers);
+            select.value = first;
+            renderLohas(first);
         }
-        await refreshLiveMarketIndicators();
+        lohasLoaded = true;
+
+        // 並行即時更新 CNN Fear & Greed、VIX 與 DollarLiquidity Forward P/E
+        const fetchFgTask = (async () => {
+            try {
+                const r = await fetch("https://production.dataviz.cnn.io/index/fearandgreed/graphdata");
+                const j = await r.json();
+                const fg = j.fear_and_greed || {};
+                if (fg.score != null) {
+                    fearGreed = {
+                        score: Math.round(fg.score * 10) / 10,
+                        rating: String(fg.rating || "").toUpperCase(),
+                        timestamp: fg.timestamp || fearGreed.timestamp,
+                        previousClose: fg.previous_close != null ? Math.round(fg.previous_close * 10) / 10 : fearGreed.previousClose,
+                        previous1Week: fg.previous_1_week != null ? Math.round(fg.previous_1_week * 10) / 10 : fearGreed.previous1Week,
+                        previous1Month: fg.previous_1_month != null ? Math.round(fg.previous_1_month * 10) / 10 : fearGreed.previous1Month,
+                        previous1Year: fg.previous_1_year != null ? Math.round(fg.previous_1_year * 10) / 10 : fearGreed.previous1Year,
+                    };
+                    renderGauge(fearGreed);
+                }
+            } catch (e) {
+                console.warn("Fear & Greed 即時更新失敗，使用快照值", e);
+            }
+        })();
+        await Promise.all([fetchFgTask, refreshLiveMarketIndicators()]);
+        return;
     } else {
         // 以目前持股（排除現金）加上額外指定商品（0052.TW, 006208.TW, TQQQ）作為可選商品，逐檔取五線譜
         const [pf, fg, mkt] = await Promise.all([
@@ -1421,19 +1563,6 @@ async function loadLohas() {
         lohasLoaded = true;
         return;
     }
-
-    // 靜態模式：一次性填入選單與圖
-    const baseTickers = (STATIC.lohas && STATIC.lohas.tickers) || Object.keys(lohasCache);
-    const tickers = [...new Set([...baseTickers, ...EXTRA_LOHAS_TICKERS])].sort();
-    select.innerHTML = tickers.map(t => `<option value="${t}">${t}</option>`).join("");
-    select.onchange = e => renderLohas(e.target.value);
-    renderGauge(fearGreed);
-    if (tickers.length) {
-        const first = pickDefault(tickers);
-        select.value = first;
-        renderLohas(first);
-    }
-    lohasLoaded = true;
 }
 
 // ================= 借貸負債分頁 =================
@@ -1578,12 +1707,14 @@ document.getElementById("tabs").addEventListener("click", e => {
 });
 
 async function refreshAll() {
-    // 載入網頁時就把兩個分頁的報價與數據全部更新
+    // 載入網頁時立即呈現快照並並行更新所有分頁的報價與市場指標
     await loadPortfolio();
     await loadHistory();
-    await loadLohas();
-    await loadDebt();
-    await refreshLivePortfolio(); // 靜態模式：若已設定 Worker 代理，覆蓋為即時報價
+    await Promise.all([
+        loadLohas(),
+        loadDebt(),
+        refreshLivePortfolio(), // 靜態模式：若已設定 Worker 代理，並行覆蓋為即時報價
+    ]);
     lastUpdatedAt = nowStr();
     updateStampText();
 }
